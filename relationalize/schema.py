@@ -1,5 +1,5 @@
 import json
-from typing import Any, Final, Generic, TypeVar, cast
+from typing import Any, Final, Generic, Optional, TypedDict, TypeVar, cast
 
 from relationalize.types import BaseSupportedColumnType, ChoiceColumnType, ColumnType, UnsupportedColumnType, is_choice_column_type
 
@@ -9,6 +9,11 @@ DialectColumnType = TypeVar('DialectColumnType')
 
 ALLOWED_COLUMN_CHARS: Final[set[str]] = {" ", "-", "_"}
 DEFAULT_SQL_DIALECT = PostgresDialect()
+
+# ColumnDict is a class to explicitly define valid Schema.schema dict values
+class ColumnDict(TypedDict):
+    type: Optional[ColumnType]
+    primary_key: Optional[bool]   # set to true if column is a primary key
 
 class Schema(Generic[DialectColumnType]):
     """
@@ -20,7 +25,7 @@ class Schema(Generic[DialectColumnType]):
 
     def __init__(
         self,
-        schema: dict[str, ColumnType] | None = None,
+        schema: dict[str, ColumnDict] | None = None,
         sql_dialect: SQLDialect[DialectColumnType] = DEFAULT_SQL_DIALECT,
     ):
         if schema is None:
@@ -31,7 +36,7 @@ class Schema(Generic[DialectColumnType]):
     def convert_object(self, record: dict[str, Any]) -> dict[str, Any]:
         """
         Convert a given object according to the schema.
-        Splits choice-columns into N seperate columns and renames keys accordingly.
+        Splits choice-columns into N separate columns and renames keys accordingly.
 
         Chooses between schema-iteration and object-iteration depending on which one will be more efficient.
         """
@@ -43,9 +48,10 @@ class Schema(Generic[DialectColumnType]):
         self, record: dict[str, object]
     ) -> dict[str, object]:
         output_object: dict[str, object] = {}
-        for key, value_type in self.schema.items():
+        for key, col in self.schema.items():
             if key not in record:
                 continue
+            value_type = col["type"]
             object_value = record[key]
             if object_value is None:
                 output_object[key] = object_value
@@ -77,7 +83,7 @@ class Schema(Generic[DialectColumnType]):
                 continue
             if key not in self.schema:
                 continue
-            value_type = self.schema[key]
+            value_type = self.schema[key]["type"]
             if is_choice_column_type(value_type):
                 # determine which type this object is and enter into correct sub-column
                 object_value_type = self._parse_type(object_value)
@@ -100,7 +106,8 @@ class Schema(Generic[DialectColumnType]):
         Generates the columns that will be in the output of `convert_object`
         """
         columns: list[str] = []
-        for key, value_type in self.schema.items():
+        for key, col in self.schema.items():
+            value_type = col["type"]
             if Schema._CHOICE_SEQUENCE not in value_type:
                 # Column is not a choice column
                 columns.append(key)
@@ -119,7 +126,8 @@ class Schema(Generic[DialectColumnType]):
         Breaking out choice columns into seperate columns.
         """
         columns: list[str] = []
-        for key, value_type in self.schema.items():
+        for key, col in self.schema.items():
+            value_type = col["type"]
             if Schema._CHOICE_SEQUENCE not in value_type:
                 # Column is not a choice column
                 columns.append(
@@ -148,8 +156,9 @@ class Schema(Generic[DialectColumnType]):
         Returns the # of columns that were dropped.
         """
         columns_to_drop: list[str] = []
-        for key, value in self.schema.items():
-            if value == "none":
+        for key, col in self.schema.items():
+            value_type = col["type"]
+            if value_type == "none":
                 columns_to_drop.append(key)
 
         for column in columns_to_drop:
@@ -215,90 +224,84 @@ class Schema(Generic[DialectColumnType]):
         value_type = Schema._parse_type(value)
         if key not in self.schema:
             # Key has not been encountered yet. Set type in schema to type of value.
-            self.schema[key] = value_type
+            self.schema[key] = { "type": value_type }
             return
-        if self.schema[key] == value_type:
+        if self.schema[key]["type"] == value_type:
             # Entry in schema for this key has same type as this record. Do Nothing.
             return
-        if self.schema[key] == "none":
+        if self.schema[key]["type"] == "none":
             # Entry in schema for this key is `none`. Set type in schema to type of value.
-            self.schema[key] = value_type
+            self.schema[key]["type"] = value_type
             return
         # Entry in schema exists for this key and the type for value is different.
         if value_type == "none":
             # Value type is `none` but existing entry in schema exists. Do Nothing.
             return
-        if self.schema[key][:2] == Schema._CHOICE_SEQUENCE:
+        if self.schema[key]["type"][:2] == Schema._CHOICE_SEQUENCE:
             # Entry in schema is a choice column.
-            if value_type in self.schema[key]:
+            if value_type in self.schema[key]["type"]:
                 # Type for Value is already in the schema choice pattern. Do Nothing.
                 return
 
             # Add this type into the choice pattern.
-            self.schema[key] = ChoiceColumnType(f"{self.schema[key]}{Schema._CHOICE_DELIMITER}{value_type}")
+            self.schema[key]["type"] = ChoiceColumnType(f"{self.schema[key]['type']}{Schema._CHOICE_DELIMITER}{value_type}")
 
-            choices = self.schema[key].split(Schema._CHOICE_DELIMITER)[1:]
+            choices = self.schema[key]["type"].split(Schema._CHOICE_DELIMITER)[1:]
             # Remove `none` type from choices
             if "none" in choices:
                 choices.remove("none")
             # Check if choices is only of lenth 1 and remove choice pattern.
             if len(choices) == 1:
-                self.schema[key] = cast(BaseSupportedColumnType, choices[0])
+                self.schema[key]["type"] = cast(BaseSupportedColumnType, choices[0])
                 return
             # Reorder the types so things are predictable.
-            self.schema[
-                key
-            ] = ChoiceColumnType(f"{Schema._CHOICE_SEQUENCE}{Schema._CHOICE_DELIMITER.join(sorted(choices))}")
+            self.schema[key]["type"] = ChoiceColumnType(f"{Schema._CHOICE_SEQUENCE}{Schema._CHOICE_DELIMITER.join(sorted(choices))}")
             return
 
         # Create new 2-type choice pattern.
-        self.schema[
-            key
-        ] = ChoiceColumnType(f"{Schema._CHOICE_SEQUENCE}{Schema._CHOICE_DELIMITER.join(sorted([self.schema[key], value_type]))}")
+        self.schema[key]["type"] = ChoiceColumnType(f"{Schema._CHOICE_SEQUENCE}{Schema._CHOICE_DELIMITER.join(sorted([self.schema[key]['type'], value_type]))}")
 
     @staticmethod
-    def merge(*args: dict[str, ColumnType]):
+    def merge(*args: dict[str, ColumnDict]):
         """
         Create a new Schema object from multiple serialized schemas merging them together.
         """
-        merged_schema: dict[str, ColumnType] = {}
+        merged_schema: dict[str, ColumnDict] = {}
         for schema in args:
-            for key, value_type in schema.items():
+            for key, col in schema.items():
                 if key not in merged_schema:
-                    merged_schema[key] = value_type
+                    merged_schema[key] = col
                     continue
-                if value_type == merged_schema[key]:
+                if col == merged_schema[key]:
                     continue
 
                 # key is in the new schema already and has different type
                 choices: set[str] = set()
-                if Schema._CHOICE_SEQUENCE in merged_schema[key]:
-                    for t in merged_schema[key][2:].split(Schema._CHOICE_DELIMITER):
+                if Schema._CHOICE_SEQUENCE in merged_schema[key]["type"]:
+                    for t in merged_schema[key]["type"][2:].split(Schema._CHOICE_DELIMITER):
                         if t == "none":
                             continue
                         choices.add(t)
                 else:
-                    choices.add(merged_schema[key])
-                if Schema._CHOICE_SEQUENCE in value_type:
-                    for t in value_type[2:].split(Schema._CHOICE_DELIMITER):
+                    choices.add(merged_schema[key]["type"])
+                if Schema._CHOICE_SEQUENCE in col["type"]:
+                    for t in col["type"][2:].split(Schema._CHOICE_DELIMITER):
                         if t == "none":
                             continue
                         choices.add(t)
                 else:
-                    choices.add(value_type)
+                    choices.add(col["type"])
 
                 if "none" in choices:
                     choices.remove("none")
                 if len(choices) == 0:
-                    merged_schema[key] = "none"
+                    merged_schema[key]["type"] = "none"
                     continue
                 if len(choices) == 1:
-                    merged_schema[key] = cast(BaseSupportedColumnType, choices.pop())
+                    merged_schema[key]["type"] = cast(BaseSupportedColumnType, choices.pop())
                     continue
 
-                merged_schema[
-                    key
-                ] = ChoiceColumnType(f"{Schema._CHOICE_SEQUENCE}{Schema._CHOICE_DELIMITER.join(sorted(choices))}")
+                merged_schema[key]["type"] = ChoiceColumnType(f"{Schema._CHOICE_SEQUENCE}{Schema._CHOICE_DELIMITER.join(sorted(choices))}")
         return Schema(schema=merged_schema)
 
     @staticmethod

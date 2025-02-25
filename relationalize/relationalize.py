@@ -88,24 +88,30 @@ class Relationalize:
         if isinstance(row, dict):
             row[_ID] = id
             row[_INDEX] = index
-            return self._relationalize(row, path=path)
+            return self._relationalize(row, path=path, from_array=True, table_path=path)
 
-        return self._relationalize({_VAL: row, _ID: id, _INDEX: index}, path=path)
+        return self._relationalize({_VAL: row, _ID: id, _INDEX: index}, path=path, from_array=True, table_path=path)
 
-    def _relationalize(self, d: list[Any] | dict[str, Any] | str, path: str = ""):
+    def _relationalize(self, d: list[Any] | dict[str, Any] | str, path: str = "", from_array: bool = False, table_path: str = ""):
         """
         Recursive back bone of the relationalize structure.
 
         Traverses any arbitrary JSON structure flattening and relationalizing.
+
+        from_array = True indicates that we are relationalizing a field that is sourced from an array.
+        This means that subsequent column names will not be not prefixed with path_prefix, but any newly created subtables will retain their path history.
         """
         path_prefix = f"{path}{_DELIMITER}"
-        if path == "":
+        if path == "" or from_array:
             path_prefix = ""
         if isinstance(d, list):
             id = Relationalize._generate_rid()
             for index, row in enumerate(d):
+                key_path = path
+                if table_path:
+                    key_path = table_path
                 self._write_to_output(
-                    path, self._list_helper(id, index, row, path=path), is_sub=True
+                    key=f"{key_path}", content=self._list_helper(id, index, row, path=path), is_sub=True
                 )
 
             return {path: id}
@@ -113,7 +119,10 @@ class Relationalize:
         if isinstance(d, dict):
             temp_d: dict[str, object] = {}
             for key in d:
-                temp_d.update(self._relationalize(d[key], path=f"{path_prefix}{key}"))
+                temp_table_path = ""
+                if from_array:
+                    temp_table_path = f"{table_path}{_DELIMITER}{key}"
+                temp_d.update(self._relationalize(d[key], path=f"{path_prefix}{key}", table_path=temp_table_path))
             return temp_d
 
         return {path: d}

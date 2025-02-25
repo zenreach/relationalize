@@ -16,7 +16,7 @@ CASE_4 = {"1": 1}
 CASE_5 = {"1": "foobar"}
 
 CASE_1_DDL = """
-CREATE TABLE "public"."test" (
+CREATE TABLE IF NOT EXISTS "public"."test" (
     "1" BIGINT
     , "2" VARCHAR(65535)
     , "3" BOOLEAN
@@ -25,7 +25,7 @@ CREATE TABLE "public"."test" (
 """.strip()
 
 CASE_2_DDL = """
-CREATE TABLE "public"."test" (
+CREATE TABLE IF NOT EXISTS "public"."test" (
     "1_int" BIGINT
     , "1_str" VARCHAR(65535)
     , "2_float" FLOAT
@@ -41,7 +41,8 @@ class SchemaTest(unittest.TestCase):
         schema = Schema()
         schema.read_object(CASE_1)
         self.assertDictEqual(
-            {"1": "int", "2": "str", "3": "bool", "4": "float"}, schema.schema
+            {"1": {"type": "int"}, "2": {"type": "str"}, "3": {"type": "bool"}, "4": {"type": "float"}}, 
+            schema.schema
         )
 
     def test_basic_choice(self):
@@ -49,7 +50,7 @@ class SchemaTest(unittest.TestCase):
         schema.read_object(CASE_1)
         schema.read_object(CASE_2)
         self.assertDictEqual(
-            {"1": "c-int-str", "2": "c-float-str", "3": "bool", "4": "float"},
+            {"1": {"type": "c-int-str"}, "2": {"type": "c-float-str"}, "3": {"type": "bool"}, "4": {"type": "float"}},
             schema.schema,
         )
 
@@ -78,7 +79,7 @@ class SchemaTest(unittest.TestCase):
         merged_schema = Schema.merge(schema1.schema, schema2.schema)
 
         self.assertDictEqual(
-            {"1": "c-int-str", "2": "c-float-str", "3": "bool", "4": "float"},
+            {"1": {"type": "c-int-str"}, "2": {"type": "c-float-str"}, "3": {"type": "bool"}, "4": {"type": "float"}},
             merged_schema.schema,
         )
 
@@ -133,16 +134,16 @@ class SchemaTest(unittest.TestCase):
     def test_none_cases(self):
         schema1 = Schema()
         schema1.read_object(CASE_3)
-        self.assertDictEqual({"1": "none"}, schema1.schema)
+        self.assertDictEqual({"1": {"type": "none"}}, schema1.schema)
 
         schema1.read_object(CASE_4)
-        self.assertDictEqual({"1": "int"}, schema1.schema)
+        self.assertDictEqual({"1": {"type": "int"}}, schema1.schema)
 
         schema1.read_object(CASE_5)
-        self.assertDictEqual({"1": "c-int-str"}, schema1.schema)
+        self.assertDictEqual({"1": {"type": "c-int-str"}}, schema1.schema)
 
         schema1.read_object(CASE_3)
-        self.assertDictEqual({"1": "c-int-str"}, schema1.schema)
+        self.assertDictEqual({"1": {"type": "c-int-str"}}, schema1.schema)
 
     def test_none_convert(self):
         schema1 = Schema()
@@ -171,7 +172,7 @@ class SchemaTest(unittest.TestCase):
     def test_drop_null_columns(self):
         schema1 = Schema()
         schema1.read_object(CASE_3)
-        self.assertDictEqual({"1": "none"}, schema1.schema)
+        self.assertDictEqual({"1": {"type": "none"}}, schema1.schema)
 
         schema1.drop_null_columns()
         self.assertDictEqual({}, schema1.schema)
@@ -180,7 +181,7 @@ class SchemaTest(unittest.TestCase):
         schema2.read_object(CASE_3)
         schema2.read_object(CASE_4)
         schema2.drop_null_columns()
-        self.assertDictEqual({"1": "int"}, schema2.schema)
+        self.assertDictEqual({"1": {"type": "int"}}, schema2.schema)
 
     def test_generate_output_columns_no_choice(self):
         schema1 = Schema()
@@ -200,15 +201,15 @@ class SchemaTest(unittest.TestCase):
         schema1 = Schema()
         schema1.read_object({"abc ": 1, "def@#": 1, "$$ghi": 1, "jkl": 1, "!@#mno": 1})
         self.assertEqual(3, schema1.drop_special_char_columns())
-        self.assertEqual(schema1.schema, {"abc ": "int", "jkl": "int"})
+        self.assertEqual(schema1.schema, {"abc ": {"type": "int"}, "jkl": {"type": "int"}})
         schema2 = Schema()
         schema2.read_object({"abc": 1, "def": 2, "GH I ": 3})
         self.assertEqual(0, schema2.drop_special_char_columns())
-        self.assertEqual(schema2.schema, {"abc": "int", "def": "int", "GH I ": "int"})
+        self.assertEqual(schema2.schema, {"abc": {"type": "int"}, "def": {"type": "int"}, "GH I ": {"type": "int"}})
         schema3 = Schema()
         schema3.read_object({"abc": 1, "de-f": 2, "GH_I ": 3})
         self.assertEqual(0, schema3.drop_special_char_columns())
-        self.assertEqual(schema3.schema, {"abc": "int", "de-f": "int", "GH_I ": "int"})
+        self.assertEqual(schema3.schema, {"abc": {"type": "int"}, "de-f": {"type": "int"}, "GH_I ": {"type": "int"}})
 
     def test_drop_duplicate_columns(self):
         schema1 = Schema()
@@ -217,8 +218,8 @@ class SchemaTest(unittest.TestCase):
         )
         self.assertEqual(2, schema1.drop_duplicate_columns())
         self.assertEqual(
-            schema1.schema,
-            {"ABc ": "int", "DEf ": "int", "ghi": "int", "jkl": "int", "ABC": "int"},
+            {"ABc ": {"type": "int"}, "DEf ": {"type": "int"}, "ghi": {"type": "int"}, "jkl": {"type": "int"}, "ABC": {"type": "int"}},
+            schema1.schema
         )
         schema2 = Schema()
         schema2.read_object(
@@ -227,14 +228,14 @@ class SchemaTest(unittest.TestCase):
         self.assertEqual(2, schema2.drop_duplicate_columns())
         self.assertEqual(
             schema2.schema,
-            {"abc": "int", "abC ": "int", "D E F": "int", "DEF": "int"},
+            {"abc": {"type": "int"}, "abC ": {"type": "int"}, "D E F": {"type": "int"}, "DEF": {"type": "int"}},
         )
         schema3 = Schema()
         schema3.read_object({"abc": 1, "def": 2, "GH I ": 3, "abC ": 4, "D E F": 5})
         self.assertEqual(0, schema3.drop_duplicate_columns())
         self.assertEqual(
             schema3.schema,
-            {"abc": "int", "def": "int", "GH I ": "int", "abC ": "int", "D E F": "int"},
+            {"abc": {"type": "int"}, "def": {"type": "int"}, "GH I ": {"type": "int"}, "abC ": {"type": "int"}, "D E F": {"type": "int"}},
         )
 
 
