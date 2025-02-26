@@ -41,7 +41,7 @@ class SchemaTest(unittest.TestCase):
         schema = Schema()
         schema.read_object(CASE_1)
         self.assertDictEqual(
-            {"1": {"type": "int"}, "2": {"type": "str"}, "3": {"type": "bool"}, "4": {"type": "float"}}, 
+            {"1": {"type": "int", "is_primary": False}, "2": {"type": "str", "is_primary": False}, "3": {"type": "bool", "is_primary": False}, "4": {"type": "float", "is_primary": False}}, 
             schema.schema
         )
 
@@ -50,7 +50,7 @@ class SchemaTest(unittest.TestCase):
         schema.read_object(CASE_1)
         schema.read_object(CASE_2)
         self.assertDictEqual(
-            {"1": {"type": "c-int-str"}, "2": {"type": "c-float-str"}, "3": {"type": "bool"}, "4": {"type": "float"}},
+            {"1": {"type": "c-int-str", "is_primary": False}, "2": {"type": "c-float-str", "is_primary": False}, "3": {"type": "bool", "is_primary": False}, "4": {"type": "float", "is_primary": False}},
             schema.schema,
         )
 
@@ -79,7 +79,7 @@ class SchemaTest(unittest.TestCase):
         merged_schema = Schema.merge(schema1.schema, schema2.schema)
 
         self.assertDictEqual(
-            {"1": {"type": "c-int-str"}, "2": {"type": "c-float-str"}, "3": {"type": "bool"}, "4": {"type": "float"}},
+            {"1": {"type": "c-int-str", "is_primary": False}, "2": {"type": "c-float-str", "is_primary": False}, "3": {"type": "bool", "is_primary": False}, "4": {"type": "float", "is_primary": False}},
             merged_schema.schema,
         )
 
@@ -134,16 +134,16 @@ class SchemaTest(unittest.TestCase):
     def test_none_cases(self):
         schema1 = Schema()
         schema1.read_object(CASE_3)
-        self.assertDictEqual({"1": {"type": "none"}}, schema1.schema)
+        self.assertDictEqual({"1": {"type": "none", "is_primary": False}}, schema1.schema)
 
         schema1.read_object(CASE_4)
-        self.assertDictEqual({"1": {"type": "int"}}, schema1.schema)
+        self.assertDictEqual({"1": {"type": "int", "is_primary": False}}, schema1.schema)
 
         schema1.read_object(CASE_5)
-        self.assertDictEqual({"1": {"type": "c-int-str"}}, schema1.schema)
+        self.assertDictEqual({"1": {"type": "c-int-str", "is_primary": False}}, schema1.schema)
 
         schema1.read_object(CASE_3)
-        self.assertDictEqual({"1": {"type": "c-int-str"}}, schema1.schema)
+        self.assertDictEqual({"1": {"type": "c-int-str", "is_primary": False}}, schema1.schema)
 
     def test_none_convert(self):
         schema1 = Schema()
@@ -172,7 +172,7 @@ class SchemaTest(unittest.TestCase):
     def test_drop_null_columns(self):
         schema1 = Schema()
         schema1.read_object(CASE_3)
-        self.assertDictEqual({"1": {"type": "none"}}, schema1.schema)
+        self.assertDictEqual({"1": {"type": "none", "is_primary": False}}, schema1.schema)
 
         schema1.drop_null_columns()
         self.assertDictEqual({}, schema1.schema)
@@ -181,7 +181,7 @@ class SchemaTest(unittest.TestCase):
         schema2.read_object(CASE_3)
         schema2.read_object(CASE_4)
         schema2.drop_null_columns()
-        self.assertDictEqual({"1": {"type": "int"}}, schema2.schema)
+        self.assertDictEqual({"1": {"type": "int", "is_primary": False}}, schema2.schema)
 
     def test_generate_output_columns_no_choice(self):
         schema1 = Schema()
@@ -201,15 +201,15 @@ class SchemaTest(unittest.TestCase):
         schema1 = Schema()
         schema1.read_object({"abc ": 1, "def@#": 1, "$$ghi": 1, "jkl": 1, "!@#mno": 1})
         self.assertEqual(3, schema1.drop_special_char_columns())
-        self.assertEqual(schema1.schema, {"abc ": {"type": "int"}, "jkl": {"type": "int"}})
+        self.assertEqual(schema1.schema, {"abc ": {"type": "int", "is_primary": False}, "jkl": {"type": "int", "is_primary": False}})
         schema2 = Schema()
         schema2.read_object({"abc": 1, "def": 2, "GH I ": 3})
         self.assertEqual(0, schema2.drop_special_char_columns())
-        self.assertEqual(schema2.schema, {"abc": {"type": "int"}, "def": {"type": "int"}, "GH I ": {"type": "int"}})
+        self.assertEqual(schema2.schema, {"abc": {"type": "int", "is_primary": False}, "def": {"type": "int", "is_primary": False}, "GH I ": {"type": "int", "is_primary": False}})
         schema3 = Schema()
         schema3.read_object({"abc": 1, "de-f": 2, "GH_I ": 3})
         self.assertEqual(0, schema3.drop_special_char_columns())
-        self.assertEqual(schema3.schema, {"abc": {"type": "int"}, "de-f": {"type": "int"}, "GH_I ": {"type": "int"}})
+        self.assertEqual(schema3.schema, {"abc": {"type": "int", "is_primary": False}, "de-f": {"type": "int", "is_primary": False}, "GH_I ": {"type": "int", "is_primary": False}})
 
     def test_drop_duplicate_columns(self):
         schema1 = Schema()
@@ -218,7 +218,7 @@ class SchemaTest(unittest.TestCase):
         )
         self.assertEqual(2, schema1.drop_duplicate_columns())
         self.assertEqual(
-            {"ABc ": {"type": "int"}, "DEf ": {"type": "int"}, "ghi": {"type": "int"}, "jkl": {"type": "int"}, "ABC": {"type": "int"}},
+            {"ABc ": {"type": "int", "is_primary": False}, "DEf ": {"type": "int", "is_primary": False}, "ghi": {"type": "int", "is_primary": False}, "jkl": {"type": "int", "is_primary": False}, "ABC": {"type": "int", "is_primary": False}},
             schema1.schema
         )
         schema2 = Schema()
@@ -228,14 +228,14 @@ class SchemaTest(unittest.TestCase):
         self.assertEqual(2, schema2.drop_duplicate_columns())
         self.assertEqual(
             schema2.schema,
-            {"abc": {"type": "int"}, "abC ": {"type": "int"}, "D E F": {"type": "int"}, "DEF": {"type": "int"}},
+            {"abc": {"type": "int", "is_primary": False}, "abC ": {"type": "int", "is_primary": False}, "D E F": {"type": "int", "is_primary": False}, "DEF": {"type": "int", "is_primary": False}},
         )
         schema3 = Schema()
         schema3.read_object({"abc": 1, "def": 2, "GH I ": 3, "abC ": 4, "D E F": 5})
         self.assertEqual(0, schema3.drop_duplicate_columns())
         self.assertEqual(
             schema3.schema,
-            {"abc": {"type": "int"}, "def": {"type": "int"}, "GH I ": {"type": "int"}, "abC ": {"type": "int"}, "D E F": {"type": "int"}},
+            {"abc": {"type": "int", "is_primary": False}, "def": {"type": "int", "is_primary": False}, "GH I ": {"type": "int", "is_primary": False}, "abC ": {"type": "int", "is_primary": False}, "D E F": {"type": "int", "is_primary": False}},
         )
 
 

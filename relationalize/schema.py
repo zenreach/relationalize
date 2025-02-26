@@ -1,19 +1,22 @@
 import json
-from typing import Any, Final, Generic, Optional, TypedDict, TypeVar, cast
+from typing import Any, Final, Generic, TypedDict, TypeVar, cast
 
 from relationalize.types import BaseSupportedColumnType, ChoiceColumnType, ColumnType, UnsupportedColumnType, is_choice_column_type
 
 from .sql_dialects import PostgresDialect, SQLDialect
+from .nosql_dialects import MONGO_FIELD
 
 DialectColumnType = TypeVar('DialectColumnType')
 
 ALLOWED_COLUMN_CHARS: Final[set[str]] = {" ", "-", "_"}
 DEFAULT_SQL_DIALECT = PostgresDialect()
 
-# ColumnDict is a class to explicitly define valid Schema.schema dict values
 class ColumnDict(TypedDict):
-    type: Optional[ColumnType]
-    primary_key: Optional[bool]   # set to true if column is a primary key
+    """
+    A class to explicitly define valid Schema.schema dict values
+    """
+    type: ColumnType
+    is_primary: bool   # set to true if column is a primary key
 
 class Schema(Generic[DialectColumnType]):
     """
@@ -128,11 +131,12 @@ class Schema(Generic[DialectColumnType]):
         columns: list[str] = []
         for key, col in self.schema.items():
             value_type = col["type"]
+            is_primary = col["is_primary"]
             if Schema._CHOICE_SEQUENCE not in value_type:
                 # Column is not a choice column
                 columns.append(
                     self.sql_dialect.generate_ddl_column(
-                        key, self.sql_dialect.type_column_mapping[value_type]
+                        key, self.sql_dialect.type_column_mapping[value_type], is_primary
                     )
                 )
                 continue
@@ -144,6 +148,7 @@ class Schema(Generic[DialectColumnType]):
                     self.sql_dialect.generate_ddl_column(
                         f"{key}_{choice_type}",
                         self.sql_dialect.type_column_mapping[choice_type],
+                        is_primary
                     )
                 )
         columns.sort()
@@ -224,7 +229,8 @@ class Schema(Generic[DialectColumnType]):
         value_type = Schema._parse_type(value)
         if key not in self.schema:
             # Key has not been encountered yet. Set type in schema to type of value.
-            self.schema[key] = { "type": value_type }
+            is_primary = False
+            self.schema[key] = { "type": value_type, "is_primary": is_primary }
             return
         if self.schema[key]["type"] == value_type:
             # Entry in schema for this key has same type as this record. Do Nothing.

@@ -22,7 +22,7 @@ class SQLDialect(ABC, Generic[DialectColumnType]):
 
     @staticmethod
     @abstractmethod
-    def generate_ddl_column(column_name: str, column_type: DialectColumnType) -> DDLColumn:
+    def generate_ddl_column(column_name: str, column_type: DialectColumnType, is_primary: bool = False) -> DDLColumn:
         raise NotImplementedError()
 
     def generate_ddl(self, schema: str, table_name: str, columns: list[str]):
@@ -36,7 +36,7 @@ class SQLDialect(ABC, Generic[DialectColumnType]):
         )
 
 
-PostgresColumn = Literal[
+PostgresColumnType = Literal[
     'BIGINT',
     'BOOLEAN',
     'FLOAT',
@@ -44,12 +44,16 @@ PostgresColumn = Literal[
     'VARCHAR(65535)',
 ]
 
-class PostgresDialect(SQLDialect[PostgresColumn]):
+PostgresColumnParameters = {
+    "primary": "PRIMARY KEY",
+}
+
+class PostgresDialect(SQLDialect[PostgresColumnType]):
     """
     Inherits from `SQLDialect` and implements the postgres syntax.
     """
 
-    type_column_mapping: Mapping[SupportedColumnType, PostgresColumn] = {
+    type_column_mapping: Mapping[SupportedColumnType, PostgresColumnType] = {
         "int": "BIGINT",
         "datetime": "TIMESTAMP",
         "float": "FLOAT",
@@ -65,6 +69,9 @@ CREATE TABLE IF NOT EXISTS "{schema}"."{table_name}" (
     """.strip()
 
     @staticmethod
-    def generate_ddl_column(column_name: str, column_type: PostgresColumn):
+    def generate_ddl_column(column_name: str, column_type: PostgresColumnType, is_primary: bool = False):
         cleaned_column_name = column_name.replace('"', '""')
-        return DDLColumn(f'"{cleaned_column_name}" {column_type}')
+        column_str = f'"{cleaned_column_name}" {column_type}'
+        if is_primary:
+            column_str = f'"{cleaned_column_name}" {column_type} {PostgresColumnParameters["primary"]}'
+        return DDLColumn(column_str)
