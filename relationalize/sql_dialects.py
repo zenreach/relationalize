@@ -40,7 +40,7 @@ PostgresColumnType = Literal[
     'BIGINT',
     'BOOLEAN',
     'FLOAT',
-    'TIMESTAMP',
+    'TIMESTAMPTZ',
     'VARCHAR(65535)',
 ]
 
@@ -55,7 +55,7 @@ class PostgresDialect(SQLDialect[PostgresColumnType]):
 
     type_column_mapping: Mapping[SupportedColumnType, PostgresColumnType] = {
         "int": "BIGINT",
-        "datetime": "TIMESTAMP",
+        "datetime": "TIMESTAMPTZ",
         "float": "FLOAT",
         "str": "VARCHAR(65535)",
         "bool": "BOOLEAN",

@@ -1,7 +1,7 @@
 import json
 from typing import Any, Final, Generic, TypedDict, TypeVar, cast
 
-from relationalize.types import BaseSupportedColumnType, ChoiceColumnType, ColumnType, UnsupportedColumnType, is_choice_column_type
+from relationalize.types import BaseSupportedColumnType, ChoiceColumnType, ColumnType, UnsupportedColumnType, is_choice_column_type, parse_type_string
 
 from .sql_dialects import PostgresDialect, SQLDialect
 from .nosql_dialects import MONGO_FIELD
@@ -322,7 +322,7 @@ class Schema(Generic[DialectColumnType]):
         if isinstance(value, float):
             return "float"
         if isinstance(value, str):
-            return "str"
+            return parse_type_string(value)
         if value is None:
             return "none"
         return UnsupportedColumnType(f"unsupported:{type(value)}")
