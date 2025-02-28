@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Mapping
 from typing import Generic, Literal, NewType, TypeVar
 
-from relationalize.types import SupportedColumnType
+from relationalize.types import SupportedColumnType, SupportedColumnParam
 
 _COLUMN_SEPARATOR = "\n    , "
 
@@ -44,8 +44,8 @@ PostgresColumnType = Literal[
     'VARCHAR(65535)',
 ]
 
-PostgresColumnParameters = {
-    "primary": "PRIMARY KEY",
+postgres_column_param: dict[SupportedColumnParam, str] = {
+    "primary_key": "PRIMARY KEY",
 }
 
 class PostgresDialect(SQLDialect[PostgresColumnType]):
@@ -73,5 +73,5 @@ CREATE TABLE IF NOT EXISTS "{schema}"."{table_name}" (
         cleaned_column_name = column_name.replace('"', '""')
         column_str = f'"{cleaned_column_name}" {column_type}'
         if is_primary:
-            column_str = f'"{cleaned_column_name}" {column_type} {PostgresColumnParameters["primary"]}'
+            column_str = f'"{cleaned_column_name}" {column_type} {postgres_column_param["primary_key"]}'
         return DDLColumn(column_str)

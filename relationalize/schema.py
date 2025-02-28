@@ -4,12 +4,13 @@ from typing import Any, Final, Generic, TypedDict, TypeVar, cast
 from relationalize.types import BaseSupportedColumnType, ChoiceColumnType, ColumnType, UnsupportedColumnType, is_choice_column_type, parse_type_string
 
 from .sql_dialects import PostgresDialect, SQLDialect
-from .nosql_dialects import MONGO_FIELD
+from .nosql_dialects import MongoDialect, NoSQLDialect
 
 DialectColumnType = TypeVar('DialectColumnType')
 
 ALLOWED_COLUMN_CHARS: Final[set[str]] = {" ", "-", "_"}
-DEFAULT_SQL_DIALECT = PostgresDialect()
+DEFAULT_SOURCE_DIALECT = MongoDialect()     # source dialect
+DEFAULT_SQL_DIALECT = PostgresDialect()     # target dialect
 
 class ColumnDict(TypedDict):
     """
@@ -29,11 +30,13 @@ class Schema(Generic[DialectColumnType]):
     def __init__(
         self,
         schema: dict[str, ColumnDict] | None = None,
-        sql_dialect: SQLDialect[DialectColumnType] = DEFAULT_SQL_DIALECT,
+        source_dialect: NoSQLDialect = DEFAULT_SOURCE_DIALECT,              # source dialect
+        sql_dialect: SQLDialect[DialectColumnType] = DEFAULT_SQL_DIALECT,   # target dialect
     ):
         if schema is None:
             schema = dict()
         self.schema = schema
+        self.source_dialect = source_dialect
         self.sql_dialect = sql_dialect
 
     def convert_object(self, record: dict[str, Any]) -> dict[str, Any]:
@@ -229,7 +232,7 @@ class Schema(Generic[DialectColumnType]):
         value_type = Schema._parse_type(value)
         if key not in self.schema:
             # Key has not been encountered yet. Set type in schema to type of value.
-            is_primary = False
+            is_primary = self.source_dialect.is_primary_key(key)
             self.schema[key] = { "type": value_type, "is_primary": is_primary }
             return
         if self.schema[key]["type"] == value_type:

@@ -29,6 +29,10 @@ SupportedColumnType = BaseSupportedColumnType | ChoiceColumnType
 
 ColumnType = SupportedColumnType | UnsupportedColumnType
 
+SupportedColumnParam = Literal[
+    'primary_key',
+]
+
 DATETIME_FORMATS = [
     "%Y-%m-%d %H:%M:%S.%f",      # Format with milliseconds
     "%Y-%m-%d %H:%M:%S",         # Format without milliseconds
