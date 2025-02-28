@@ -29,36 +29,45 @@ SupportedColumnType = BaseSupportedColumnType | ChoiceColumnType
 
 ColumnType = SupportedColumnType | UnsupportedColumnType
 
+DATETIME_FORMATS = [
+    "%Y-%m-%d %H:%M:%S.%f",      # Format with milliseconds
+    "%Y-%m-%d %H:%M:%S",         # Format without milliseconds
+    "%Y-%m-%d %H:%M:%S.%fZ"      # Format with milliseconds + timezone indicator
+]
+
 def parse_type_string(value: str):
     """
     Return data type of string if it can be parsed as a different data type
     """
-    # check if bool
-    value_lower = value.lower()
-    if value_lower in ['true', 'false']:
-        return 'bool'
+    # # check if bool
+    # value_lower = value.lower()
+    # if value_lower in ['true', 'false']:
+    #     return 'bool'
     
-    # check if int
-    try:
-        int(value)
-        return 'int'
-    except ValueError:
-        pass
+    # # check if int
+    # try:
+    #     int(value)
+    #     return 'int'
+    # except ValueError:
+    #     pass
 
-    # check if float
-    try:
-        float(value)
-        return 'float'
-    except ValueError:
-        pass
+    # # check if float
+    # try:
+        # fval = float(value)
+        # if fval.is_integer():
+        #     return "int"
+        # else:
+        #     return "float"
+    # except ValueError:
+    #     pass
 
-    # check if datetime with format 2025-02-27 14:05:09.123456
-    try:
-        timestamp_format = "%Y-%m-%d %H:%M:%S.%f"
-        datetime.strptime(value, timestamp_format)
-        return 'datetime'
-    except ValueError:
-        pass
+    # check if in valid datetime format
+    for fmt in DATETIME_FORMATS:
+        try:
+            datetime.strptime(value, fmt)
+            return 'datetime'
+        except ValueError:
+            continue
 
-    # If not all of the above, it is just a str
+    # If not all of the above, leave as a str
     return 'str'

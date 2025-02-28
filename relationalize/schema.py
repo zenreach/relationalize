@@ -320,7 +320,10 @@ class Schema(Generic[DialectColumnType]):
         if isinstance(value, int):
             return "int"
         if isinstance(value, float):
-            return "float"
+            if value.is_integer():
+                return "int"
+            else:
+                return "float"
         if isinstance(value, str):
             return parse_type_string(value)
         if value is None:
