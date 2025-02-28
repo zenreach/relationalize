@@ -15,7 +15,7 @@ class NoSQLDialect(ABC):
         raise NotImplementedError()
 
 
-mongo_field_name: dict[SupportedColumnParam, str] = {
+mongo_field: dict[SupportedColumnParam, str] = {
     "primary_key": "_id",
 }
 
@@ -29,4 +29,4 @@ class MongoDialect(NoSQLDialect):
         '''
         Checks if the key is a primary key in MongoDB
         '''
-        return (key == mongo_field_name["primary_key"])
+        return (key == mongo_field["primary_key"])

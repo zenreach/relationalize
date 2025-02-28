@@ -42,6 +42,8 @@ DATETIME_FORMATS = [
 def parse_type_string(value: str):
     """
     Return data type of string if it can be parsed as a different data type
+
+    Uncomment the cases relevant to you
     """
     # # check if bool
     # value_lower = value.lower()
