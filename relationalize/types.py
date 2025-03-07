@@ -8,6 +8,9 @@ unsupported:[type]
 UnsupportedColumnType = NewType('UnsupportedColumnType', str)
 
 def is_unsupported_column_type(column: str) -> TypeGuard[UnsupportedColumnType]:
+    """
+    Return True if the column type is unsupported
+    """
     return column.startswith('unsupported:')
 
 """
@@ -19,12 +22,13 @@ def is_choice_column_type(column: str) -> TypeGuard[ChoiceColumnType]:
     return column.startswith('c-')
 
 BaseSupportedColumnType = Literal[
-    'bool',
-    'datetime',
-    'float',
-    'int',
     'none',
+    'bool',
+    'int',
+    'bigint',
+    'float',
     'str',
+    'datetime',
 ]
 SupportedColumnType = BaseSupportedColumnType | ChoiceColumnType
 
@@ -33,6 +37,15 @@ ColumnType = SupportedColumnType | UnsupportedColumnType
 SupportedColumnParam = Literal[
     'primary_key',
 ]
+
+INT_MIN = -2147483648
+INT_MAX = 2147483647
+
+def parse_type_int(value: int):
+    if value < INT_MIN or value > INT_MAX:
+        return 'bigint'
+    else:
+        return 'int'
 
 # Initial datetime regex that matches a string starting with "%Y-%m-%d %H:%M:%S" and anything after
 DATETIME_REGEX = r'^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}.*$'

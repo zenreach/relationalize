@@ -2,7 +2,7 @@ import json
 import logging
 from typing import Any, Final, Generic, TypedDict, TypeVar, cast
 
-from relationalize.types import BaseSupportedColumnType, ChoiceColumnType, ColumnType, UnsupportedColumnType, is_choice_column_type, parse_type_string
+from relationalize.types import BaseSupportedColumnType, ChoiceColumnType, ColumnType, UnsupportedColumnType, is_choice_column_type, is_unsupported_column_type, parse_type_int, parse_type_string
 
 from .sql_dialects import PostgresDialect, SQLDialect
 from .nosql_dialects import MongoDialect, NoSQLDialect
@@ -153,6 +153,10 @@ class Schema(Generic[DialectColumnType]):
         for key, col in self.schema.items():
             value_type = col["type"]
             is_primary = col["is_primary"]
+            if "bigint" in value_type:
+                self.logger.debug(f"The '{key}' column in the '{table}' table has values of type BIGINT.\n")
+
+
             if is_primary:
                 columns_pk.append(key)
             if Schema._CHOICE_SEQUENCE not in value_type:
@@ -181,16 +185,19 @@ class Schema(Generic[DialectColumnType]):
 
         # Ensure a reasonable # of primary key columns
         pk_count = len(columns_pk)
-        if pk_count > 1:
-            self.logger.warning(
-                f"Found {pk_count} column(s) with the PRIMARY KEY param in the '{table}' table when there should be at most one.\n" \
-                f"These columns are: {columns_pk}"
-            )
+        if pk_count != 1:
+            if pk_count == 0:
+                self.logger.info(f"The '{table}' table is missing a PRIMARY KEY column.\n")
+            else:
+                self.logger.warning(
+                    f"Found {pk_count} column(s) with the PRIMARY KEY param in the '{table}' table when there should only be one.\n" \
+                    f"These columns are: {columns_pk}"
+                )
         # Log columns with the none data type
         none_count = len(columns_none)
         if none_count > 0:
             self.logger.info(
-                f"Found {none_count} column(s) that hold only null vals in the '{table}'. By default, they will be set to BOOLEAN.\n" \
+                f"Found {none_count} column(s) that hold only null vals in the '{table}' table. By default, they will be set to BOOLEAN.\n" \
                 f"These columns are: {columns_none}"
             )
         # Log multi data type columns
@@ -277,7 +284,7 @@ class Schema(Generic[DialectColumnType]):
     def _read_write_object_key(self, key: str, value: object):
         value_type = Schema._parse_type(value)
 
-        if value_type.startswith(Schema._UNSUPPORTED_SEQUENCE):
+        if is_unsupported_column_type(value_type):
             # Ignore any values whose type cannot be parsed (unsupported types)
             self.logger.warning(f"The key {key} has the value {value} of type {value_type}. Since this data type is not supported, this key-value pair will be ignored.")
             return
@@ -381,10 +388,10 @@ class Schema(Generic[DialectColumnType]):
         if isinstance(value, bool):
             return "bool"
         if isinstance(value, int):
-            return "int"
+            return parse_type_int(value)
         if isinstance(value, float):
             if value.is_integer():
-                return "int"
+                return parse_type_int(value)
             else:
                 return "float"
         if isinstance(value, str):

@@ -1,3 +1,4 @@
+import logging
 import unittest
 from copy import deepcopy
 
@@ -7,9 +8,9 @@ setup_tests()
 
 from relationalize.schema import Schema
 
-CASE_1 = {"1": 1, "2": "foobar", "3": False, "4": 1.2}
+CASE_1 = {"1": 1, "2": "foobar", "3": False, "4": 1.2, "5": 50000000000}
 
-CASE_2 = {"1": "foobar", "2": 9.9, "3": True, "4": 9.5}
+CASE_2 = {"1": "foobar", "2": 9.9, "3": True, "4": 9.5, "5": 60000000000}
 
 CASE_3 = {"1": None}
 CASE_4 = {"1": 1}
@@ -26,21 +27,23 @@ CASE_8B = {"1": 1.0, "2": 2.2}
 
 CASE_1_DDL = """
 CREATE TABLE IF NOT EXISTS "public"."test" (
-    "1" BIGINT
+    "1" INT
     , "2" VARCHAR(65535)
     , "3" BOOLEAN
     , "4" FLOAT
+    , "5" BIGINT
 );
 """.strip()
 
 CASE_2_DDL = """
 CREATE TABLE IF NOT EXISTS "public"."test" (
-    "1_int" BIGINT
+    "1_int" INT
     , "1_str" VARCHAR(65535)
     , "2_float" FLOAT
     , "2_str" VARCHAR(65535)
     , "3" BOOLEAN
     , "4" FLOAT
+    , "5" BIGINT
 );
 """.strip()
 
@@ -68,7 +71,7 @@ class SchemaTest(unittest.TestCase):
         schema = Schema()
         schema.read_object(CASE_1)
         self.assertDictEqual(
-            {"1": {"type": "int", "is_primary": False}, "2": {"type": "str", "is_primary": False}, "3": {"type": "bool", "is_primary": False}, "4": {"type": "float", "is_primary": False}}, 
+            {"1": {"type": "int", "is_primary": False}, "2": {"type": "str", "is_primary": False}, "3": {"type": "bool", "is_primary": False}, "4": {"type": "float", "is_primary": False}, "5": {"type": "bigint", "is_primary": False}}, 
             schema.schema
         )
 
@@ -77,7 +80,7 @@ class SchemaTest(unittest.TestCase):
         schema.read_object(CASE_1)
         schema.read_object(CASE_2)
         self.assertDictEqual(
-            {"1": {"type": "c-int-str", "is_primary": False}, "2": {"type": "c-float-str", "is_primary": False}, "3": {"type": "bool", "is_primary": False}, "4": {"type": "float", "is_primary": False}},
+            {"1": {"type": "c-int-str", "is_primary": False}, "2": {"type": "c-float-str", "is_primary": False}, "3": {"type": "bool", "is_primary": False}, "4": {"type": "float", "is_primary": False}, "5": {"type": "bigint", "is_primary": False}},
             schema.schema,            
         )
 
@@ -131,7 +134,7 @@ class SchemaTest(unittest.TestCase):
         merged_schema = Schema.merge(schema1.schema, schema2.schema)
 
         self.assertDictEqual(
-            {"1": {"type": "c-int-str", "is_primary": False}, "2": {"type": "c-float-str", "is_primary": False}, "3": {"type": "bool", "is_primary": False}, "4": {"type": "float", "is_primary": False}},
+            {"1": {"type": "c-int-str", "is_primary": False}, "2": {"type": "c-float-str", "is_primary": False}, "3": {"type": "bool", "is_primary": False}, "4": {"type": "float", "is_primary": False}, "5": {"type": "bigint", "is_primary": False}},
             merged_schema.schema,
         )
 
@@ -164,11 +167,11 @@ class SchemaTest(unittest.TestCase):
 
         converted1 = schema1.convert_object(deepcopy(CASE_1))
         self.assertDictEqual(
-            {"1_int": 1, "2_str": "foobar", "3": False, "4": 1.2}, converted1
+            {"1_int": 1, "2_str": "foobar", "3": False, "4": 1.2, "5": 50000000000}, converted1
         )
         converted2 = schema1.convert_object(deepcopy(CASE_2))
         self.assertDictEqual(
-            {"1_str": "foobar", "2_float": 9.9, "3": True, "4": 9.5}, converted2
+            {"1_str": "foobar", "2_float": 9.9, "3": True, "4": 9.5, "5": 60000000000}, converted2
         )
 
     def test_generate_ddl_no_choice(self):
@@ -248,14 +251,14 @@ class SchemaTest(unittest.TestCase):
     def test_generate_output_columns_no_choice(self):
         schema1 = Schema()
         schema1.read_object(CASE_1)
-        self.assertListEqual(["1", "2", "3", "4"], schema1.generate_output_columns())
+        self.assertListEqual(["1", "2", "3", "4", "5"], schema1.generate_output_columns())
 
     def test_generate_output_columns_choice(self):
         schema1 = Schema()
         schema1.read_object(CASE_1)
         schema1.read_object(CASE_2)
         self.assertListEqual(
-            ["1_int", "1_str", "2_float", "2_str", "3", "4"],
+            ["1_int", "1_str", "2_float", "2_str", "3", "4", "5"],
             schema1.generate_output_columns(),
         )
 

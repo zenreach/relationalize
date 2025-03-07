@@ -37,11 +37,12 @@ class SQLDialect(ABC, Generic[DialectColumnType]):
 
 
 PostgresColumnType = Literal[
-    'BIGINT',
     'BOOLEAN',
+    'INT',
+    'BIGINT',
     'FLOAT',
-    'TIMESTAMPTZ',
     'VARCHAR(65535)',
+    'TIMESTAMPTZ',
 ]
 
 postgres_column_param: dict[SupportedColumnParam, str] = {
@@ -54,12 +55,13 @@ class PostgresDialect(SQLDialect[PostgresColumnType]):
     """
 
     type_column_mapping: Mapping[SupportedColumnType, PostgresColumnType] = {
-        "int": "BIGINT",
-        "datetime": "TIMESTAMPTZ",
+        "none": "BOOLEAN",
+        "bool": "BOOLEAN",
+        "int": "INT",
+        "bigint": "BIGINT",
         "float": "FLOAT",
         "str": "VARCHAR(65535)",
-        "bool": "BOOLEAN",
-        "none": "BOOLEAN",
+        "datetime": "TIMESTAMPTZ",
     }
 
     base_ddl: str = """
