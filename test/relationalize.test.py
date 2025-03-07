@@ -27,6 +27,7 @@ CASE_7 = {"1": {"2": 1, "3": "foobar"}}
 
 CASE_8 = {"1": [[{"2": 3}, {"2": 4}], [{"2": 5}, {"2": 6}]]}
 
+CASE_9 = {"1": None, "2": {}, "3": []}
 
 class RelationalizeTest(unittest.TestCase):
     def test_no_array(self):
@@ -371,6 +372,15 @@ class RelationalizeTest(unittest.TestCase):
                 json.loads(test_case_8_1__val_list[3])["_index_"], 1
             )
 
+    def test_null_or_empty(self):
+        with Relationalize("test_case_9", create_local_buffer()) as r:
+            r.relationalize([CASE_9])
+            self.assertListEqual(["test_case_9"], list(r.outputs.keys()))
+            r.outputs["test_case_9"].seek(0)
+            self.assertRegex(
+                r.outputs["test_case_9"].read(),
+                r"{\"1\": null, \"3\": null}",
+            )
 
 if __name__ == "__main__":
     unittest.main()

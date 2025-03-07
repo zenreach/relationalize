@@ -26,6 +26,7 @@ class Schema(Generic[DialectColumnType]):
 
     _CHOICE_SEQUENCE: str = "c-"
     _CHOICE_DELIMITER: str = "-"
+    _UNSUPPORTED_SEQUENCE: str = "unsupported:"
 
     def __init__(
         self,
@@ -230,8 +231,12 @@ class Schema(Generic[DialectColumnType]):
 
     def _read_write_object_key(self, key: str, value: object):
         value_type = Schema._parse_type(value)
+
+        if value_type.startswith(Schema._UNSUPPORTED_SEQUENCE):
+            # Ignore any values whose type cannot be parsed (unsupported types)
+            return
         if key not in self.schema:
-            # Key has not been encountered yet. Set type in schema to type of value.
+            # Key has not been encountered yet. Set type in schema to type of value, and add primary key param as necessary
             is_primary = self.source_dialect.is_primary_key(key)
             self.schema[key] = { "type": value_type, "is_primary": is_primary }
             return
@@ -259,7 +264,7 @@ class Schema(Generic[DialectColumnType]):
             # Remove `none` type from choices
             if "none" in choices:
                 choices.remove("none")
-            # Check if choices is only of lenth 1 and remove choice pattern.
+            # Check if choices is only of length 1 and remove choice pattern.
             if len(choices) == 1:
                 self.schema[key]["type"] = cast(BaseSupportedColumnType, choices[0])
                 return
@@ -267,7 +272,16 @@ class Schema(Generic[DialectColumnType]):
             self.schema[key]["type"] = ChoiceColumnType(f"{Schema._CHOICE_SEQUENCE}{Schema._CHOICE_DELIMITER.join(sorted(choices))}")
             return
 
-        # Create new 2-type choice pattern.
+        # Handle multi-data type case by generalization
+        if self.schema[key]["type"] == "int" and value_type == "float":
+            # Entries in schema for this key were 'int', but with new float type detected, they should be replaced by the more general 'float' type
+            self.schema[key]["type"] = value_type
+            return
+        if self.schema[key]["type"] == "float" and value_type == "int":
+            # Entry in schema for this key is a 'float', which encapsulates 'int'. Do Nothing.
+            return
+    
+        # Create new 2-type choice pattern
         self.schema[key]["type"] = ChoiceColumnType(f"{Schema._CHOICE_SEQUENCE}{Schema._CHOICE_DELIMITER.join(sorted([self.schema[key]['type'], value_type]))}")
 
     @staticmethod
@@ -331,4 +345,4 @@ class Schema(Generic[DialectColumnType]):
             return parse_type_string(value)
         if value is None:
             return "none"
-        return UnsupportedColumnType(f"unsupported:{type(value)}")
+        return UnsupportedColumnType(f"{Schema._UNSUPPORTED_SEQUENCE}{type(value)}")

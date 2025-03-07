@@ -15,6 +15,15 @@ CASE_3 = {"1": None}
 CASE_4 = {"1": 1}
 CASE_5 = {"1": "foobar"}
 
+CASE_6 = {"_id": "abc123", "not_id": "foobar"}
+
+CASE_7 = {"1": "2017-06-30 22:38:59.051000", "2": "2017-11-12 22:38:59.011Z", "3": "2017-11-12 22:38:59.011-0500", "4": "2017-08-10T17:25:01.324+02:00", "5": "2017-07-09 00:00:00", "6": "2017-07-09T00:00:00", "7": "2017-07-09"}
+
+# Field 1: int/float => int, Field 2: int/float => float
+CASE_8A = {"1": 1, "2": 2}
+CASE_8B = {"1": 1.0, "2": 2.2}
+
+
 CASE_1_DDL = """
 CREATE TABLE IF NOT EXISTS "public"."test" (
     "1" BIGINT
@@ -35,6 +44,24 @@ CREATE TABLE IF NOT EXISTS "public"."test" (
 );
 """.strip()
 
+CASE_6_DDL = """
+CREATE TABLE IF NOT EXISTS "public"."test" (
+    "_id" VARCHAR(65535) PRIMARY KEY
+    , "not_id" VARCHAR(65535)
+);
+""".strip()
+
+CASE_7_DDL = """
+CREATE TABLE IF NOT EXISTS "public"."test" (
+    "1" TIMESTAMPTZ
+    , "2" TIMESTAMPTZ
+    , "3" TIMESTAMPTZ
+    , "4" TIMESTAMPTZ
+    , "5" TIMESTAMPTZ
+    , "6" TIMESTAMPTZ
+    , "7" VARCHAR(65535)
+);
+""".strip()
 
 class SchemaTest(unittest.TestCase):
     def test_all_types_no_choice(self):
@@ -51,7 +78,32 @@ class SchemaTest(unittest.TestCase):
         schema.read_object(CASE_2)
         self.assertDictEqual(
             {"1": {"type": "c-int-str", "is_primary": False}, "2": {"type": "c-float-str", "is_primary": False}, "3": {"type": "bool", "is_primary": False}, "4": {"type": "float", "is_primary": False}},
-            schema.schema,
+            schema.schema,            
+        )
+
+    def test_primary_key(self):
+        schema = Schema()
+        schema.read_object(CASE_6)
+        self.assertDictEqual(
+            {"_id": {"type": "str", "is_primary": True}, "not_id": {"type": "str", "is_primary": False}}, 
+            schema.schema
+        )
+
+    def test_datetime(self):
+        schema = Schema()
+        schema.read_object(CASE_7)
+        self.assertDictEqual(
+            {"1": {"type": "datetime", "is_primary": False}, "2": {"type": "datetime", "is_primary": False}, "3": {"type": "datetime", "is_primary": False}, "4": {"type": "datetime", "is_primary": False}, "5": {"type": "datetime", "is_primary": False}, "6": {"type": "datetime", "is_primary": False}, "7": {"type": "str", "is_primary": False}}, 
+            schema.schema
+        )
+    
+    def test_generalize_choice_int_float(self):
+        schema = Schema()
+        schema.read_object(CASE_8A)
+        schema.read_object(CASE_8B)
+        self.assertDictEqual(
+            {"1": {"type": "int", "is_primary": False}, "2": {"type": "float", "is_primary": False}}, 
+            schema.schema
         )
 
     def test_merge_noop(self):
@@ -130,6 +182,16 @@ class SchemaTest(unittest.TestCase):
         schema1.read_object(CASE_2)
 
         self.assertEqual(CASE_2_DDL, schema1.generate_ddl("test"))
+
+    def test_generate_ddl_primary_key(self):
+        schema1 = Schema()
+        schema1.read_object(CASE_6)
+        self.assertEqual(CASE_6_DDL, schema1.generate_ddl("test"))
+
+    def test_generate_ddl_datetime(self):
+        schema1 = Schema()
+        schema1.read_object(CASE_7)
+        self.assertEqual(CASE_7_DDL, schema1.generate_ddl("test"))
 
     def test_none_cases(self):
         schema1 = Schema()

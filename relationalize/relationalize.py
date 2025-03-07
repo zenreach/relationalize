@@ -105,17 +105,19 @@ class Relationalize:
         if path == "" or from_array:
             path_prefix = ""
         if isinstance(d, list):
-            id = Relationalize._generate_rid()
-            for index, row in enumerate(d):
-                key_path = path
-                if table_path:
-                    key_path = table_path
-                self._write_to_output(
-                    key=f"{key_path}", content=self._list_helper(id, index, row, path=path), is_sub=True
-                )
-
-            return {path: id}
-
+            if len(d) == 0:
+                return {path: None}
+            else:
+                id = Relationalize._generate_rid()
+                for index, row in enumerate(d):
+                    key_path = path
+                    if table_path:
+                        key_path = table_path
+                    self._write_to_output(
+                        key=f"{key_path}", content=self._list_helper(id, index, row, path=path), is_sub=True
+                    )
+                return {path: id}
+            
         if isinstance(d, dict):
             temp_d: dict[str, object] = {}
             for key in d:

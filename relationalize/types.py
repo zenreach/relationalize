@@ -1,3 +1,4 @@
+import re
 from datetime import datetime
 from typing import Literal, NewType, TypeGuard
 
@@ -33,10 +34,14 @@ SupportedColumnParam = Literal[
     'primary_key',
 ]
 
-DATETIME_FORMATS = [
-    "%Y-%m-%d %H:%M:%S.%f",      # Format with milliseconds
-    "%Y-%m-%d %H:%M:%S",         # Format without milliseconds
-    "%Y-%m-%d %H:%M:%S.%fZ"      # Format with milliseconds + timezone indicator
+# Initial datetime regex that matches a string starting with "%Y-%m-%d %H:%M:%S" and anything after
+DATETIME_REGEX = r'^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}.*$'
+DATETIME_VALID_FORMATS = [
+    "%Y-%m-%d %H:%M:%S.%f",     # With milliseconds                     (e.g. 2017-11-12 22:38:59.010000)
+    "%Y-%m-%d %H:%M:%S.%f%z",   # With milliseconds, tz offset          (e.g. 2017-11-12 22:38:59.010000-0500, 2017-11-12 22:38:59.01-05:00)
+    "%Y-%m-%dT%H:%M:%S.%f%z",   # With milliseconds, tz offset, T sep   (e.g. 2017-11-12T22:38:59.010000-0500, 2017-11-12T22:38:59.010000-05:00)
+    "%Y-%m-%d %H:%M:%S",        # Without milliseconds                  (e.g. 2017-11-12 22:38:59)
+    "%Y-%m-%dT%H:%M:%S",        # Without milliseconds, T sep           (e.g. 2017-11-12T22:38:59)
 ]
 
 def parse_type_string(value: str):
@@ -67,13 +72,19 @@ def parse_type_string(value: str):
     # except ValueError:
     #     pass
 
-    # check if in valid datetime format
-    for fmt in DATETIME_FORMATS:
-        try:
-            datetime.strptime(value, fmt)
-            return 'datetime'
-        except ValueError:
-            continue
+
+    # Check if in any of the valid datetime formats 
+    # First, perform a general datetime format check to limit datetime.strptime calls, improving performance
+    if re.match(DATETIME_REGEX, value):
+        # special case: remove the 'Z' character to handle formats with the 'Z' UTC stand-in (e.g. 2017-11-12 22:38:59.010000Z, 2017-11-12 22:38:59.011Z)
+        if value.endswith('Z'):
+            value = value[:-1]
+        for fmt in DATETIME_VALID_FORMATS:
+            try:
+                datetime.strptime(value, fmt)
+                return 'datetime'
+            except ValueError:
+                continue
 
     # If not all of the above, leave as a str
     return 'str'
