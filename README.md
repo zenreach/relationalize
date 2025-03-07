@@ -1,6 +1,5 @@
 # Relationalize
-Zenreach's relationalize, forked from [tulip/relationalize](https://github.com/tulip/relationalize), is a Python library for transforming collections of JSON objects, into a relational-friendly format.
-It draws inspiration from the [AWS Glue Relationalize transform](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-api-crawler-pyspark-transforms-Relationalize.html).
+This is a Python library for transforming collections of JSON objects into a relational-friendly format, compatible with MongoDB as a source. It is forked from [tulip/relationalize](https://github.com/tulip/relationalize), which draws inspiration from the [AWS Glue Relationalize transform](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-api-crawler-pyspark-transforms-Relationalize.html).
 
 This library differs from the original tulip/relationalize as follows:
 - Added handling for JSON files of MongoDB records
