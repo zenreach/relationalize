@@ -1,5 +1,6 @@
 from collections.abc import Iterable
 import json
+import logging
 from types import TracebackType
 from typing import Any, Callable, TextIO
 from uuid import uuid4
@@ -12,8 +13,8 @@ _ID = f"{_DELIMITER}rid{_DELIMITER}"
 _VAL = f"{_DELIMITER}val{_DELIMITER}"
 _INDEX = f"{_DELIMITER}index{_DELIMITER}"
 
-
 DEFAULT_LOCAL_FILE_CALLABLE = create_local_file()
+DEFAULT_LOGLEVEL = logging.WARNING
 
 class Relationalize:
     """
@@ -28,11 +29,22 @@ class Relationalize:
         name: str,
         create_output: Callable[[str], TextIO] = DEFAULT_LOCAL_FILE_CALLABLE,
         on_object_write: Callable[[str, dict[str, Any]], None] = no_op,
+        log_level=DEFAULT_LOGLEVEL
     ):
         self.name = name
         self.create_output = create_output
         self.on_object_write = on_object_write
         self.outputs: dict[str, TextIO] = {}
+
+        # Configure logger
+        logger = logging.getLogger(self.__class__.__name__)
+        logger.setLevel(log_level)
+        if not logger.handlers:
+            handler = logging.StreamHandler()
+            formatter = logging.Formatter('%(asctime)s - [%(name)s, %(levelname)s] %(message)s')
+            handler.setFormatter(formatter)
+            logger.addHandler(handler)
+        self.logger = logger
 
     def __enter__(self):
         return self
