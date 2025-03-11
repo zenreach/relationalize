@@ -27,6 +27,7 @@ CASE_7 = {"1": {"2": 1, "3": "foobar"}}
 
 CASE_8 = {"1": [[{"2": 3}, {"2": 4}], [{"2": 5}, {"2": 6}]]}
 
+CASE_9 = {"1": None, "2": {}, "3": []}
 
 class RelationalizeTest(unittest.TestCase):
     def test_no_array(self):
@@ -65,11 +66,11 @@ class RelationalizeTest(unittest.TestCase):
 
             self.assertRegex(
                 file_lines[0],
-                r"{\"1__val_\": 1, \"1__rid_\": \"R_[a-z0-9]{32}\", \"1__index_\": 0}",
+                r"{\"_val_\": 1, \"_rid_\": \"R_[a-z0-9]{32}\", \"_index_\": 0}",
             )
             self.assertRegex(
                 file_lines[1],
-                r"{\"1__val_\": 2, \"1__rid_\": \"R_[a-z0-9]{32}\", \"1__index_\": 1}",
+                r"{\"_val_\": 2, \"_rid_\": \"R_[a-z0-9]{32}\", \"_index_\": 1}",
             )
 
     def test_struct_array(self):
@@ -91,21 +92,21 @@ class RelationalizeTest(unittest.TestCase):
         )
         self.assertRegex(
             file_lines[0],
-            r"{\"1_2\": \"foobar\", \"1_3\": 1, \"1__rid_\": \"R_[a-z0-9]{32}\", \"1__index_\": 0}",
+            r"{\"2\": \"foobar\", \"3\": 1, \"_rid_\": \"R_[a-z0-9]{32}\", \"_index_\": 0}",
         )
         self.assertRegex(
             file_lines[1],
-            r"{\"1_2\": \"barfoo\", \"1_3\": 3, \"1__rid_\": \"R_[a-z0-9]{32}\", \"1__index_\": 1}",
+            r"{\"2\": \"barfoo\", \"3\": 3, \"_rid_\": \"R_[a-z0-9]{32}\", \"_index_\": 1}",
         )
 
         self.assertEqual(
             json.loads(test_case_4_content)["1"],
-            json.loads(file_lines[0])["1__rid_"],
+            json.loads(file_lines[0])["_rid_"],
         )
 
         self.assertEqual(
             json.loads(test_case_4_content)["1"],
-            json.loads(file_lines[1])["1__rid_"],
+            json.loads(file_lines[1])["_rid_"],
         )
 
     def test_list_list_literal(self):
@@ -136,51 +137,51 @@ class RelationalizeTest(unittest.TestCase):
 
             self.assertRegex(
                 test_case_5_1_list[0],
-                r"{\"1__val_\": \"R_[a-z0-9]{32}\", \"1__rid_\": \"R_[a-z0-9]{32}\", \"1__index_\": 0}",
+                r"{\"_val_\": \"R_[a-z0-9]{32}\", \"_rid_\": \"R_[a-z0-9]{32}\", \"_index_\": 0}",
             )
             self.assertRegex(
                 test_case_5_1_list[1],
-                r"{\"1__val_\": \"R_[a-z0-9]{32}\", \"1__rid_\": \"R_[a-z0-9]{32}\", \"1__index_\": 1}",
+                r"{\"_val_\": \"R_[a-z0-9]{32}\", \"_rid_\": \"R_[a-z0-9]{32}\", \"_index_\": 1}",
             )
 
             self.assertRegex(
                 test_case_5_1__val_list[0],
-                r"{\"1__val___val_\": 1, \"1__val___rid_\": \"R_[a-z0-9]{32}\", \"1__val___index_\": 0}",
+                r"{\"_val_\": 1, \"_rid_\": \"R_[a-z0-9]{32}\", \"_index_\": 0}",
             )
 
             self.assertRegex(
                 test_case_5_1__val_list[1],
-                r"{\"1__val___val_\": 2, \"1__val___rid_\": \"R_[a-z0-9]{32}\", \"1__val___index_\": 0}",
+                r"{\"_val_\": 2, \"_rid_\": \"R_[a-z0-9]{32}\", \"_index_\": 0}",
             )
 
             self.assertRegex(
                 test_case_5_1__val_list[2],
-                r"{\"1__val___val_\": 3, \"1__val___rid_\": \"R_[a-z0-9]{32}\", \"1__val___index_\": 1}",
+                r"{\"_val_\": 3, \"_rid_\": \"R_[a-z0-9]{32}\", \"_index_\": 1}",
             )
 
             self.assertEqual(
                 json.loads(test_case_5_content)["1"],
-                json.loads(test_case_5_1_list[0])["1__rid_"],
+                json.loads(test_case_5_1_list[0])["_rid_"],
             )
 
             self.assertEqual(
                 json.loads(test_case_5_content)["1"],
-                json.loads(test_case_5_1_list[1])["1__rid_"],
+                json.loads(test_case_5_1_list[1])["_rid_"],
             )
 
             self.assertEqual(
-                json.loads(test_case_5_1_list[0])["1__val_"],
-                json.loads(test_case_5_1__val_list[0])["1__val___rid_"],
+                json.loads(test_case_5_1_list[0])["_val_"],
+                json.loads(test_case_5_1__val_list[0])["_rid_"],
             )
 
             self.assertEqual(
-                json.loads(test_case_5_1_list[1])["1__val_"],
-                json.loads(test_case_5_1__val_list[1])["1__val___rid_"],
+                json.loads(test_case_5_1_list[1])["_val_"],
+                json.loads(test_case_5_1__val_list[1])["_rid_"],
             )
 
             self.assertEqual(
-                json.loads(test_case_5_1_list[1])["1__val_"],
-                json.loads(test_case_5_1__val_list[2])["1__val___rid_"],
+                json.loads(test_case_5_1_list[1])["_val_"],
+                json.loads(test_case_5_1__val_list[2])["_rid_"],
             )
 
     def test_nested_array_struct_array(self):
@@ -205,60 +206,60 @@ class RelationalizeTest(unittest.TestCase):
 
             self.assertRegex(
                 file_lines[0],
-                r"{\"1_2\": \"foobar\", \"1_3\": \"R_[a-z0-9]{32}\", \"1__rid_\": \"R_[a-z0-9]{32}\", \"1__index_\": 0}",
+                r"{\"2\": \"foobar\", \"3\": \"R_[a-z0-9]{32}\", \"_rid_\": \"R_[a-z0-9]{32}\", \"_index_\": 0}",
             )
             self.assertRegex(
                 file_lines[1],
-                r"{\"1_2\": \"barfoo\", \"1_3\": \"R_[a-z0-9]{32}\", \"1__rid_\": \"R_[a-z0-9]{32}\", \"1__index_\": 1}",
+                r"{\"2\": \"barfoo\", \"3\": \"R_[a-z0-9]{32}\", \"_rid_\": \"R_[a-z0-9]{32}\", \"_index_\": 1}",
             )
 
             sub_file_lines = r.outputs["test_case_6_1_3"].read().strip().split("\n")
 
             self.assertRegex(
                 sub_file_lines[0],
-                r"{\"1_3__val_\": 1, \"1_3__rid_\": \"R_[a-z0-9]{32}\", \"1_3__index_\": 0}",
+                r"{\"_val_\": 1, \"_rid_\": \"R_[a-z0-9]{32}\", \"_index_\": 0}",
             )
 
             self.assertRegex(
                 sub_file_lines[1],
-                r"{\"1_3__val_\": 2, \"1_3__rid_\": \"R_[a-z0-9]{32}\", \"1_3__index_\": 1}",
+                r"{\"_val_\": 2, \"_rid_\": \"R_[a-z0-9]{32}\", \"_index_\": 1}",
             )
 
             self.assertRegex(
                 sub_file_lines[2],
-                r"{\"1_3__val_\": 3, \"1_3__rid_\": \"R_[a-z0-9]{32}\", \"1_3__index_\": 0}",
+                r"{\"_val_\": 3, \"_rid_\": \"R_[a-z0-9]{32}\", \"_index_\": 0}",
             )
 
             self.assertRegex(
                 sub_file_lines[3],
-                r"{\"1_3__val_\": 4, \"1_3__rid_\": \"R_[a-z0-9]{32}\", \"1_3__index_\": 1}",
+                r"{\"_val_\": 4, \"_rid_\": \"R_[a-z0-9]{32}\", \"_index_\": 1}",
             )
 
             self.assertEqual(
                 json.loads(test_case_6_content)["1"],
-                json.loads(file_lines[0])["1__rid_"],
+                json.loads(file_lines[0])["_rid_"],
             )
             self.assertEqual(
                 json.loads(test_case_6_content)["1"],
-                json.loads(file_lines[1])["1__rid_"],
+                json.loads(file_lines[1])["_rid_"],
             )
 
             self.assertEqual(
-                json.loads(file_lines[0])["1_3"],
-                json.loads(sub_file_lines[0])["1_3__rid_"],
+                json.loads(file_lines[0])["3"],
+                json.loads(sub_file_lines[0])["_rid_"],
             )
             self.assertEqual(
-                json.loads(file_lines[0])["1_3"],
-                json.loads(sub_file_lines[1])["1_3__rid_"],
+                json.loads(file_lines[0])["3"],
+                json.loads(sub_file_lines[1])["_rid_"],
             )
 
             self.assertEqual(
-                json.loads(file_lines[1])["1_3"],
-                json.loads(sub_file_lines[2])["1_3__rid_"],
+                json.loads(file_lines[1])["3"],
+                json.loads(sub_file_lines[2])["_rid_"],
             )
             self.assertEqual(
-                json.loads(file_lines[1])["1_3"],
-                json.loads(sub_file_lines[3])["1_3__rid_"],
+                json.loads(file_lines[1])["3"],
+                json.loads(sub_file_lines[3])["_rid_"],
             )
 
     def test_flatten_struct(self):
@@ -301,76 +302,85 @@ class RelationalizeTest(unittest.TestCase):
 
             self.assertRegex(
                 test_case_8_1_list[0],
-                r"{\"1__val_\": \"R_[a-z0-9]{32}\", \"1__rid_\": \"R_[a-z0-9]{32}\", \"1__index_\": 0}",
+                r"{\"_val_\": \"R_[a-z0-9]{32}\", \"_rid_\": \"R_[a-z0-9]{32}\", \"_index_\": 0}",
             )
             self.assertRegex(
                 test_case_8_1_list[1],
-                r"{\"1__val_\": \"R_[a-z0-9]{32}\", \"1__rid_\": \"R_[a-z0-9]{32}\", \"1__index_\": 1}",
+                r"{\"_val_\": \"R_[a-z0-9]{32}\", \"_rid_\": \"R_[a-z0-9]{32}\", \"_index_\": 1}",
             )
 
             self.assertRegex(
                 test_case_8_1__val_list[0],
-                r"{\"1__val__2\": 3, \"1__val___rid_\": \"R_[a-z0-9]{32}\", \"1__val___index_\": 0}",
+                r"{\"2\": 3, \"_rid_\": \"R_[a-z0-9]{32}\", \"_index_\": 0}",
             )
             self.assertRegex(
                 test_case_8_1__val_list[1],
-                r"{\"1__val__2\": 4, \"1__val___rid_\": \"R_[a-z0-9]{32}\", \"1__val___index_\": 1}",
+                r"{\"2\": 4, \"_rid_\": \"R_[a-z0-9]{32}\", \"_index_\": 1}",
             )
             self.assertRegex(
                 test_case_8_1__val_list[2],
-                r"{\"1__val__2\": 5, \"1__val___rid_\": \"R_[a-z0-9]{32}\", \"1__val___index_\": 0}",
+                r"{\"2\": 5, \"_rid_\": \"R_[a-z0-9]{32}\", \"_index_\": 0}",
             )
             self.assertRegex(
                 test_case_8_1__val_list[3],
-                r"{\"1__val__2\": 6, \"1__val___rid_\": \"R_[a-z0-9]{32}\", \"1__val___index_\": 1}",
+                r"{\"2\": 6, \"_rid_\": \"R_[a-z0-9]{32}\", \"_index_\": 1}",
             )
 
             self.assertEqual(
                 json.loads(test_case_8_content)["1"],
-                json.loads(test_case_8_1_list[0])["1__rid_"],
+                json.loads(test_case_8_1_list[0])["_rid_"],
             )
 
             self.assertEqual(
                 json.loads(test_case_8_content)["1"],
-                json.loads(test_case_8_1_list[1])["1__rid_"],
+                json.loads(test_case_8_1_list[1])["_rid_"],
             )
 
             self.assertEqual(
-                json.loads(test_case_8_1_list[0])["1__val_"],
-                json.loads(test_case_8_1__val_list[0])["1__val___rid_"],
+                json.loads(test_case_8_1_list[0])["_val_"],
+                json.loads(test_case_8_1__val_list[0])["_rid_"],
             )
 
             self.assertEqual(
-                json.loads(test_case_8_1_list[0])["1__val_"],
-                json.loads(test_case_8_1__val_list[1])["1__val___rid_"],
+                json.loads(test_case_8_1_list[0])["_val_"],
+                json.loads(test_case_8_1__val_list[1])["_rid_"],
             )
 
             self.assertEqual(
-                json.loads(test_case_8_1_list[1])["1__val_"],
-                json.loads(test_case_8_1__val_list[2])["1__val___rid_"],
+                json.loads(test_case_8_1_list[1])["_val_"],
+                json.loads(test_case_8_1__val_list[2])["_rid_"],
             )
 
             self.assertEqual(
-                json.loads(test_case_8_1_list[1])["1__val_"],
-                json.loads(test_case_8_1__val_list[3])["1__val___rid_"],
+                json.loads(test_case_8_1_list[1])["_val_"],
+                json.loads(test_case_8_1__val_list[3])["_rid_"],
             )
 
-            self.assertEqual(json.loads(test_case_8_1_list[0])["1__index_"], 0)
-            self.assertEqual(json.loads(test_case_8_1_list[1])["1__index_"], 1)
+            self.assertEqual(json.loads(test_case_8_1_list[0])["_index_"], 0)
+            self.assertEqual(json.loads(test_case_8_1_list[1])["_index_"], 1)
 
             self.assertEqual(
-                json.loads(test_case_8_1__val_list[0])["1__val___index_"], 0
+                json.loads(test_case_8_1__val_list[0])["_index_"], 0
             )
             self.assertEqual(
-                json.loads(test_case_8_1__val_list[1])["1__val___index_"], 1
+                json.loads(test_case_8_1__val_list[1])["_index_"], 1
             )
             self.assertEqual(
-                json.loads(test_case_8_1__val_list[2])["1__val___index_"], 0
+                json.loads(test_case_8_1__val_list[2])["_index_"], 0
             )
             self.assertEqual(
-                json.loads(test_case_8_1__val_list[3])["1__val___index_"], 1
+                json.loads(test_case_8_1__val_list[3])["_index_"], 1
             )
 
+    def test_null_or_empty(self):
+        with Relationalize("test_case_9", create_local_buffer()) as r:
+            r.relationalize([CASE_9])
+            self.assertListEqual(["test_case_9"], list(r.outputs.keys()))
+            r.outputs["test_case_9"].seek(0)
+            self.assertRegex(
+                r.outputs["test_case_9"].read(),
+                r"{\"1\": null, \"3\": null}",
+            )
 
 if __name__ == "__main__":
     unittest.main()

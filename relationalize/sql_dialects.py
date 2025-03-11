@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Mapping
 from typing import Generic, Literal, NewType, TypeVar
 
-from relationalize.types import SupportedColumnType
+from relationalize.types import SupportedColumnType, SupportedColumnParam
 
 _COLUMN_SEPARATOR = "\n    , "
 
@@ -22,7 +22,7 @@ class SQLDialect(ABC, Generic[DialectColumnType]):
 
     @staticmethod
     @abstractmethod
-    def generate_ddl_column(column_name: str, column_type: DialectColumnType) -> DDLColumn:
+    def generate_ddl_column(column_name: str, column_type: DialectColumnType, is_primary: bool = False) -> DDLColumn:
         raise NotImplementedError()
 
     def generate_ddl(self, schema: str, table_name: str, columns: list[str]):
@@ -36,26 +36,32 @@ class SQLDialect(ABC, Generic[DialectColumnType]):
         )
 
 
-PostgresColumn = Literal[
-    'BIGINT',
+PostgresColumnType = Literal[
     'BOOLEAN',
+    'INT',
+    'BIGINT',
     'FLOAT',
-    'TIMESTAMP',
     'VARCHAR(65535)',
+    'TIMESTAMPTZ',
 ]
 
-class PostgresDialect(SQLDialect[PostgresColumn]):
+postgres_column_param: dict[SupportedColumnParam, str] = {
+    "primary_key": "PRIMARY KEY",
+}
+
+class PostgresDialect(SQLDialect[PostgresColumnType]):
     """
     Inherits from `SQLDialect` and implements the postgres syntax.
     """
 
-    type_column_mapping: Mapping[SupportedColumnType, PostgresColumn] = {
-        "int": "BIGINT",
-        "datetime": "TIMESTAMP",
+    type_column_mapping: Mapping[SupportedColumnType, PostgresColumnType] = {
+        "none": "BOOLEAN",
+        "bool": "BOOLEAN",
+        "int": "INT",
+        "bigint": "BIGINT",
         "float": "FLOAT",
         "str": "VARCHAR(65535)",
-        "bool": "BOOLEAN",
-        "none": "BOOLEAN",
+        "datetime": "TIMESTAMPTZ",
     }
 
     base_ddl: str = """
@@ -65,6 +71,9 @@ CREATE TABLE IF NOT EXISTS "{schema}"."{table_name}" (
     """.strip()
 
     @staticmethod
-    def generate_ddl_column(column_name: str, column_type: PostgresColumn):
+    def generate_ddl_column(column_name: str, column_type: PostgresColumnType, is_primary: bool = False):
         cleaned_column_name = column_name.replace('"', '""')
-        return DDLColumn(f'"{cleaned_column_name}" {column_type}')
+        column_str = f'"{cleaned_column_name}" {column_type}'
+        if is_primary:
+            column_str = f'"{cleaned_column_name}" {column_type} {postgres_column_param["primary_key"]}'
+        return DDLColumn(column_str)

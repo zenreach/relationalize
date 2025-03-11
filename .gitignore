@@ -1,4 +1,5 @@
 __pycache__
+.python-version
 .venv
 dist
 relationalize.egg-info
