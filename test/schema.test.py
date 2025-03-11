@@ -7,6 +7,7 @@ from setup_tests import setup_tests
 setup_tests()
 
 from relationalize.schema import Schema
+from relationalize.sql_dialects import FlinkDialect
 
 CASE_1 = {"1": 1, "2": "foobar", "3": False, "4": 1.2, "5": 50000000000}
 
@@ -24,7 +25,7 @@ CASE_7 = {"1": "2017-06-30 22:38:59.051000", "2": "2017-11-12 22:38:59.011Z", "3
 CASE_8A = {"1": 1, "2": 2}
 CASE_8B = {"1": 1.0, "2": 2.2}
 
-
+# DDLs expected for dialect = Postgres (default)
 CASE_1_DDL = """
 CREATE TABLE IF NOT EXISTS "public"."test" (
     "1" INT
@@ -66,7 +67,57 @@ CREATE TABLE IF NOT EXISTS "public"."test" (
 );
 """.strip()
 
+# DDLs expected for dialect = Flink
+CASE_1_DDL_FLINK = """
+CREATE TABLE IF NOT EXISTS "public"."test" (
+    "1" INT
+    , "2" STRING
+    , "3" BOOLEAN
+    , "4" FLOAT
+    , "5" BIGINT
+);
+""".strip()
+
+CASE_2_DDL_FLINK = """
+CREATE TABLE IF NOT EXISTS "public"."test" (
+    "1_int" INT
+    , "1_str" STRING
+    , "2_float" FLOAT
+    , "2_str" STRING
+    , "3" BOOLEAN
+    , "4" FLOAT
+    , "5" BIGINT
+);
+""".strip()
+
+CASE_6_DDL_FLINK = """
+CREATE TABLE IF NOT EXISTS "public"."test" (
+    "_id" STRING PRIMARY KEY NOT ENFORCED
+    , "not_id" STRING
+);
+""".strip()
+
+CASE_7_DDL_FLINK = """
+CREATE TABLE IF NOT EXISTS "public"."test" (
+    "1" TIMESTAMP_LTZ
+    , "2" TIMESTAMP_LTZ
+    , "3" TIMESTAMP_LTZ
+    , "4" TIMESTAMP_LTZ
+    , "5" TIMESTAMP_LTZ
+    , "6" TIMESTAMP_LTZ
+    , "7" STRING
+);
+""".strip()
+
 class SchemaTest(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.sql_dialects = [
+            None,
+            FlinkDialect
+        ]
+
     def test_all_types_no_choice(self):
         schema = Schema()
         schema.read_object(CASE_1)
@@ -175,26 +226,65 @@ class SchemaTest(unittest.TestCase):
         )
 
     def test_generate_ddl_no_choice(self):
-        schema1 = Schema()
-        schema1.read_object(CASE_1)
-        self.assertEqual(CASE_1_DDL, schema1.generate_ddl("test"))
+        for dialect in self.sql_dialects:
+            with self.subTest(dialect=dialect):
+                if dialect is None:
+                    schema1 = Schema()
+                    expected_ddl = CASE_1_DDL
+                elif dialect == FlinkDialect:
+                    schema1 = Schema(sql_dialect=dialect())
+                    expected_ddl = CASE_1_DDL_FLINK
+                else:
+                    self.fail(f"Subtest failed due to unexpected SQL dialect = {dialect}")
+                
+                schema1.read_object(CASE_1)
+                self.assertEqual(expected_ddl, schema1.generate_ddl("test"))
 
     def test_generate_ddl_choice(self):
-        schema1 = Schema()
-        schema1.read_object(CASE_1)
-        schema1.read_object(CASE_2)
+        for dialect in self.sql_dialects:
+            with self.subTest(dialect=dialect):
+                if dialect is None:
+                    schema1 = Schema()
+                    expected_ddl = CASE_2_DDL
+                elif dialect == FlinkDialect:
+                    schema1 = Schema(sql_dialect=dialect())
+                    expected_ddl = CASE_2_DDL_FLINK
+                else:
+                    self.fail(f"Subtest failed due to unexpected SQL dialect = {dialect}")
 
-        self.assertEqual(CASE_2_DDL, schema1.generate_ddl("test"))
+                schema1.read_object(CASE_1)
+                schema1.read_object(CASE_2)
+                self.assertEqual(expected_ddl, schema1.generate_ddl("test"))
 
     def test_generate_ddl_primary_key(self):
-        schema1 = Schema()
-        schema1.read_object(CASE_6)
-        self.assertEqual(CASE_6_DDL, schema1.generate_ddl("test"))
+        for dialect in self.sql_dialects:
+            with self.subTest(dialect=dialect):
+                if dialect is None:
+                    schema1 = Schema()
+                    expected_ddl = CASE_6_DDL
+                elif dialect == FlinkDialect:
+                    schema1 = Schema(sql_dialect=dialect())
+                    expected_ddl = CASE_6_DDL_FLINK
+                else:
+                    self.fail(f"Subtest failed due to unexpected SQL dialect = {dialect}")
+
+                schema1.read_object(CASE_6)
+                self.assertEqual(expected_ddl, schema1.generate_ddl("test"))
 
     def test_generate_ddl_datetime(self):
-        schema1 = Schema()
-        schema1.read_object(CASE_7)
-        self.assertEqual(CASE_7_DDL, schema1.generate_ddl("test"))
+        for dialect in self.sql_dialects:
+            with self.subTest(dialect=dialect):
+                if dialect is None:
+                    schema1 = Schema()
+                    expected_ddl = CASE_7_DDL
+                elif dialect == FlinkDialect:
+                    schema1 = Schema(sql_dialect=dialect())
+                    expected_ddl = CASE_7_DDL_FLINK
+                else:
+                    self.fail(f"Subtest failed due to unexpected SQL dialect = {dialect}")
+
+                schema1.read_object(CASE_7)
+                self.assertEqual(expected_ddl, schema1.generate_ddl("test"))
 
     def test_none_cases(self):
         schema1 = Schema()
