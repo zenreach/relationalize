@@ -35,14 +35,16 @@ class SQLDialect(ABC, Generic[DialectColumnType]):
             schema=schema, table_name=table_name, columns=columns_str
         )
 
+# PostgreSQL #
 
 PostgresColumnType = Literal[
     'BOOLEAN',
     'INT',
     'BIGINT',
-    'FLOAT',
-    'VARCHAR(65535)',
-    'TIMESTAMPTZ',
+    'FLOAT',        # FLOAT === FLOAT8 === DOUBLE PRECISION
+    'TEXT',
+    'TIMESTAMP',    # TIMESTAMP WITHOUT TIMEZONE
+    'TIMESTAMPTZ',  # TIMESTAMP WITH TIMEZONE
 ]
 
 postgres_column_param: dict[SupportedColumnParam, str] = {
@@ -60,8 +62,9 @@ class PostgresDialect(SQLDialect[PostgresColumnType]):
         "int": "INT",
         "bigint": "BIGINT",
         "float": "FLOAT",
-        "str": "VARCHAR(65535)",
-        "datetime": "TIMESTAMPTZ",
+        "str": "TEXT",
+        "datetime": "TIMESTAMP",
+        "datetime_tz": "TIMESTAMPTZ",
     }
 
     base_ddl: str = """

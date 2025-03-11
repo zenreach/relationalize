@@ -28,7 +28,7 @@ CASE_8B = {"1": 1.0, "2": 2.2}
 CASE_1_DDL = """
 CREATE TABLE IF NOT EXISTS "public"."test" (
     "1" INT
-    , "2" VARCHAR(65535)
+    , "2" TEXT
     , "3" BOOLEAN
     , "4" FLOAT
     , "5" BIGINT
@@ -38,9 +38,9 @@ CREATE TABLE IF NOT EXISTS "public"."test" (
 CASE_2_DDL = """
 CREATE TABLE IF NOT EXISTS "public"."test" (
     "1_int" INT
-    , "1_str" VARCHAR(65535)
+    , "1_str" TEXT
     , "2_float" FLOAT
-    , "2_str" VARCHAR(65535)
+    , "2_str" TEXT
     , "3" BOOLEAN
     , "4" FLOAT
     , "5" BIGINT
@@ -49,8 +49,8 @@ CREATE TABLE IF NOT EXISTS "public"."test" (
 
 CASE_6_DDL = """
 CREATE TABLE IF NOT EXISTS "public"."test" (
-    "_id" VARCHAR(65535) PRIMARY KEY
-    , "not_id" VARCHAR(65535)
+    "_id" TEXT PRIMARY KEY
+    , "not_id" TEXT
 );
 """.strip()
 
@@ -62,7 +62,7 @@ CREATE TABLE IF NOT EXISTS "public"."test" (
     , "4" TIMESTAMPTZ
     , "5" TIMESTAMPTZ
     , "6" TIMESTAMPTZ
-    , "7" VARCHAR(65535)
+    , "7" TEXT
 );
 """.strip()
 
@@ -96,7 +96,7 @@ class SchemaTest(unittest.TestCase):
         schema = Schema()
         schema.read_object(CASE_7)
         self.assertDictEqual(
-            {"1": {"type": "datetime", "is_primary": False}, "2": {"type": "datetime", "is_primary": False}, "3": {"type": "datetime", "is_primary": False}, "4": {"type": "datetime", "is_primary": False}, "5": {"type": "datetime", "is_primary": False}, "6": {"type": "datetime", "is_primary": False}, "7": {"type": "str", "is_primary": False}}, 
+            {"1": {"type": "datetime_tz", "is_primary": False}, "2": {"type": "datetime_tz", "is_primary": False}, "3": {"type": "datetime_tz", "is_primary": False}, "4": {"type": "datetime_tz", "is_primary": False}, "5": {"type": "datetime_tz", "is_primary": False}, "6": {"type": "datetime_tz", "is_primary": False}, "7": {"type": "str", "is_primary": False}}, 
             schema.schema
         )
     

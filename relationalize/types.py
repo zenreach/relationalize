@@ -28,7 +28,8 @@ BaseSupportedColumnType = Literal[
     'bigint',
     'float',
     'str',
-    'datetime',
+    'datetime',     # without timezone
+    'datetime_tz',  # with timezone
 ]
 SupportedColumnType = BaseSupportedColumnType | ChoiceColumnType
 
@@ -95,7 +96,7 @@ def parse_type_string(value: str):
         for fmt in DATETIME_VALID_FORMATS:
             try:
                 datetime.strptime(value, fmt)
-                return 'datetime'
+                return 'datetime_tz'
             except ValueError:
                 continue
 
