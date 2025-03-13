@@ -3,9 +3,11 @@ This is a Python library for transforming collections of JSON objects into a rel
 
 This library differs from the original tulip/relationalize as follows:
 - Added handling for JSON files of MongoDB records
+- Added handling for Apache Flink SQL dialect
 - Added PRIMARY KEY handling
 - Modified naming conventions
 - Modified and extended data type parsing
+- Flexibility for relationalizing array fields with the `stringify_arrays` argument in the relationalize class constructor
 
 ## JSON Object Collections
 When working with JSON often there are collections of objects with the same or similar structure. For example, in a NoSQL database there may be a collection describing users with the following two documents/objects:
@@ -121,7 +123,7 @@ For example the first document in the users collection would output the followin
 // users
 {
     "username": "jsmith123",
-    "created_at_str": "Monday, December 15, 2022 at 20:24",
+    "created_at": "Monday, December 15, 2022 at 20:24",
     "contact_email_address": "jsmith123@gmail.com",
     "contact_phone_number": 1234567890,
     "connections": "R_969c799a3177437d98074d985861242b"
@@ -147,8 +149,36 @@ For example the first document in the users collection would output the followin
 }
 ```
 
+### Options
+The relationalize class constructor takes in an optional `stringify_arrays` boolean (`False` by default) that determines how arrays are relationalized. As seen in the above example, whenever an array is encountered, new tables are created and a connection/relation is provided between the objects. By setting `stringify_arrays = True`, all top-level arrays (including any nested arrays and objects within) are converted to a string.
+
+For example:
+```python
+schemas: Dict[str, Schema] = {}
+
+def on_object_write(schema: str, object: dict):
+  if schema not in schemas:
+      schemas[schema] = Schema()
+  schemas[schema].read_object(object)
+
+with Relationalize('object_name', on_object_write=on_object_write, stringify_arrays=True) as r:
+    r.relationalize([{...}, {...}])
+```
+With this, the first document in the users collection would output the following after being processed by `relationalize` and `convert_object`:
+```javascript
+// users
+{
+    "username": "jsmith123",
+    "created_at": "Monday, December 15, 2022 at 20:24",
+    "contact_email_address": "jsmith123@gmail.com",
+    "contact_phone_number": 1234567890,
+    "connections": "['jdoe456','elowry789']",
+    "visits": "[{'seen_at': '2022-12-15T20:24:26.637Z','count': 3]"
+}
+```
+
 ## Logging
-There is an option to configure the logging level by passing it into `Relationalize` and `Schema` objects. It is set to `logging.WARNING` by default and outputs to the terminal.
+The relationalize and schema class constructor both have an optional `log_level` argument. It is set to `logging.WARNING` by default and outputs logs to the terminal.
 ```python
 import logging
 

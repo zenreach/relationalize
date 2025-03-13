@@ -1,4 +1,5 @@
 from collections.abc import Iterable
+import copy
 import json
 import logging
 from types import TracebackType
@@ -19,9 +20,13 @@ DEFAULT_LOGLEVEL = logging.WARNING
 class Relationalize:
     """
     A class/utility for relationalizing JSON content.
+
+    stringify_arrays = False by default, causing array fields to be separated into individual tables. Set stringify_arrays = True to relationalize arrays by converting them to a string.
+
     ```
     with Relationalize('abc') as r:
         r.relationalize([{"a": 1}])
+    ```
     """
 
     def __init__(
@@ -29,11 +34,13 @@ class Relationalize:
         name: str,
         create_output: Callable[[str], TextIO] = DEFAULT_LOCAL_FILE_CALLABLE,
         on_object_write: Callable[[str, dict[str, Any]], None] = no_op,
+        stringify_arrays: bool = False,
         log_level=DEFAULT_LOGLEVEL
     ):
         self.name = name
         self.create_output = create_output
         self.on_object_write = on_object_write
+        self.stringify_arrays = stringify_arrays
         self.outputs: dict[str, TextIO] = {}
 
         # Configure logger
@@ -97,12 +104,13 @@ class Relationalize:
 
         Handles the difference between an array of literals and an array of structs.
         """
+        new_row: dict[str, object] = copy.deepcopy(row)
         if isinstance(row, dict):
-            row[_ID] = id
-            row[_INDEX] = index
-            return self._relationalize(row, path=path, from_array=True, table_path=path)
+            new_row[_ID] = id
+            new_row[_INDEX] = index
+            return self._relationalize(new_row, path=path, from_array=True, table_path=path)
 
-        return self._relationalize({_VAL: row, _ID: id, _INDEX: index}, path=path, from_array=True, table_path=path)
+        return self._relationalize({_VAL: new_row, _ID: id, _INDEX: index}, path=path, from_array=True, table_path=path)
 
     def _relationalize(self, d: list[Any] | dict[str, Any] | str, path: str = "", from_array: bool = False, table_path: str = ""):
         """
@@ -120,15 +128,19 @@ class Relationalize:
             if len(d) == 0:
                 return {path: None}
             else:
-                id = Relationalize._generate_rid()
-                for index, row in enumerate(d):
-                    key_path = path
-                    if table_path:
-                        key_path = table_path
-                    self._write_to_output(
-                        key=f"{key_path}", content=self._list_helper(id, index, row, path=path), is_sub=True
-                    )
-                return {path: id}
+                if self.stringify_arrays:
+                    d_str = str(d)
+                    return {path: d_str}
+                else:
+                    id = Relationalize._generate_rid()
+                    for index, row in enumerate(d):
+                        key_path = path
+                        if table_path:
+                            key_path = table_path
+                        self._write_to_output(
+                            key=f"{key_path}", content=self._list_helper(id, index, row, path=path), is_sub=True
+                        )
+                    return {path: id}
             
         if isinstance(d, dict):
             temp_d: dict[str, object] = {}
@@ -144,6 +156,7 @@ class Relationalize:
     def close_io(self) -> None:
         for file_object in self.outputs.values():
             file_object.close()
+        self.outputs.clear() 
 
     @staticmethod
     def _generate_rid() -> str:

@@ -25,7 +25,7 @@ class SQLDialect(ABC, Generic[DialectColumnType]):
     def generate_ddl_column(column_name: str, column_type: DialectColumnType, is_primary: bool = False) -> DDLColumn:
         raise NotImplementedError()
 
-    def generate_ddl(self, schema: str, table_name: str, columns: list[str]):
+    def generate_ddl(self, schema: str, table_name: str, columns: list[str]) -> str:
         """
         Generates a complete "Create Table" statement given the
         schema, table_name, and column definitions.
