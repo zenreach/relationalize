@@ -173,7 +173,7 @@ With this, the first document in the users collection would output the following
     "contact_email_address": "jsmith123@gmail.com",
     "contact_phone_number": 1234567890,
     "connections": "['jdoe456','elowry789']",
-    "visits": "[{'seen_at': '2022-12-15T20:24:26.637Z','count': 3]"
+    "visits": "[{'seen_at': '2022-12-15T20:24:26.637Z','count': 3}]"
 }
 ```
 

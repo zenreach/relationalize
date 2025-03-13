@@ -45,8 +45,7 @@ INT_MAX = 2147483647
 def parse_type_int(value: int):
     if value < INT_MIN or value > INT_MAX:
         return 'bigint'
-    else:
-        return 'int'
+    return 'int'
 
 # Initial datetime regex that matches a string starting with "%Y-%m-%d %H:%M:%S" and anything after
 DATETIME_REGEX = r'^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}.*$'
@@ -65,27 +64,24 @@ def parse_type_string(value: str):
     Uncomment the cases relevant to you
     """
     # # check if bool
-    # value_lower = value.lower()
-    # if value_lower in ['true', 'false']:
+    # if value.lower() in ['true', 'false']:
     #     return 'bool'
-    
+
     # # check if int
     # try:
-    #     int(value)
-    #     return 'int'
+    #     int_val = int(value)
+    #     return parse_type_int(int_val)
     # except ValueError:
     #     pass
 
     # # check if float
     # try:
-        # fval = float(value)
-        # if fval.is_integer():
-        #     return "int"
-        # else:
-        #     return "float"
+    #     float_val = float(value)
+    #     if float_val.is_integer():
+    #         return parse_type_int(int(float_val))
+    #     return "float"
     # except ValueError:
     #     pass
-
 
     # Check if in any of the valid datetime formats 
     # First, perform a general datetime format check to limit datetime.strptime calls, improving performance

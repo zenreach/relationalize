@@ -385,17 +385,16 @@ class Schema(Generic[DialectColumnType]):
         """
         Get the type of a given value
         """
+        if isinstance(value, str):
+            return parse_type_string(value)
         if isinstance(value, bool):
             return "bool"
         if isinstance(value, int):
             return parse_type_int(value)
         if isinstance(value, float):
             if value.is_integer():
-                return parse_type_int(value)
-            else:
-                return "float"
-        if isinstance(value, str):
-            return parse_type_string(value)
+                return parse_type_int(int(value))
+            return "float"
         if value is None:
             return "none"
         return UnsupportedColumnType(f"{Schema._UNSUPPORTED_SEQUENCE}{type(value)}")

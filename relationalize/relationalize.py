@@ -127,20 +127,20 @@ class Relationalize:
         if isinstance(d, list):
             if len(d) == 0:
                 return {path: None}
-            else:
-                if self.stringify_arrays:
-                    d_str = str(d)
-                    return {path: d_str}
-                else:
-                    id = Relationalize._generate_rid()
-                    for index, row in enumerate(d):
-                        key_path = path
-                        if table_path:
-                            key_path = table_path
-                        self._write_to_output(
-                            key=f"{key_path}", content=self._list_helper(id, index, row, path=path), is_sub=True
-                        )
-                    return {path: id}
+            
+            if self.stringify_arrays:
+                d_str = str(d)
+                return {path: d_str}
+
+            id = Relationalize._generate_rid()
+            for index, row in enumerate(d):
+                key_path = path
+                if table_path:
+                    key_path = table_path
+                self._write_to_output(
+                    key=f"{key_path}", content=self._list_helper(id, index, row, path=path), is_sub=True
+                )
+            return {path: id}
             
         if isinstance(d, dict):
             temp_d: dict[str, object] = {}
@@ -156,7 +156,6 @@ class Relationalize:
     def close_io(self) -> None:
         for file_object in self.outputs.values():
             file_object.close()
-        self.outputs.clear() 
 
     @staticmethod
     def _generate_rid() -> str:
