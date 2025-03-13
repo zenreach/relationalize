@@ -7,7 +7,7 @@ from setup_tests import setup_tests
 setup_tests()
 
 from relationalize.schema import Schema
-from relationalize.sql_dialects import FlinkDialect
+from relationalize.sql_dialects import FlinkDialect, PostgresDialect
 
 CASE_1 = {"1": 1, "2": "foobar", "3": False, "4": 1.2, "5": 50000000000}
 
@@ -114,7 +114,7 @@ class SchemaTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.sql_dialects = [
-            None,
+            PostgresDialect,
             FlinkDialect
         ]
 
@@ -228,63 +228,59 @@ class SchemaTest(unittest.TestCase):
     def test_generate_ddl_no_choice(self):
         for dialect in self.sql_dialects:
             with self.subTest(dialect=dialect):
-                if dialect is None:
-                    schema1 = Schema()
+                if dialect is PostgresDialect:
                     expected_ddl = CASE_1_DDL
-                elif dialect == FlinkDialect:
-                    schema1 = Schema(sql_dialect=dialect())
+                elif dialect is FlinkDialect:
                     expected_ddl = CASE_1_DDL_FLINK
                 else:
                     self.fail(f"Subtest failed due to unexpected SQL dialect = {dialect}")
-                
+
+                schema1 = Schema()
                 schema1.read_object(CASE_1)
-                self.assertEqual(expected_ddl, schema1.generate_ddl("test"))
+                self.assertEqual(expected_ddl, schema1.generate_ddl("test", sql_dialect=dialect()))
 
     def test_generate_ddl_choice(self):
         for dialect in self.sql_dialects:
             with self.subTest(dialect=dialect):
-                if dialect is None:
-                    schema1 = Schema()
+                if dialect is PostgresDialect:
                     expected_ddl = CASE_2_DDL
-                elif dialect == FlinkDialect:
-                    schema1 = Schema(sql_dialect=dialect())
+                elif dialect is FlinkDialect:
                     expected_ddl = CASE_2_DDL_FLINK
                 else:
                     self.fail(f"Subtest failed due to unexpected SQL dialect = {dialect}")
 
+                schema1 = Schema()
                 schema1.read_object(CASE_1)
                 schema1.read_object(CASE_2)
-                self.assertEqual(expected_ddl, schema1.generate_ddl("test"))
+                self.assertEqual(expected_ddl, schema1.generate_ddl("test", sql_dialect=dialect()))
 
     def test_generate_ddl_primary_key(self):
         for dialect in self.sql_dialects:
             with self.subTest(dialect=dialect):
-                if dialect is None:
-                    schema1 = Schema()
+                if dialect is PostgresDialect:
                     expected_ddl = CASE_6_DDL
-                elif dialect == FlinkDialect:
-                    schema1 = Schema(sql_dialect=dialect())
+                elif dialect is FlinkDialect:
                     expected_ddl = CASE_6_DDL_FLINK
                 else:
                     self.fail(f"Subtest failed due to unexpected SQL dialect = {dialect}")
 
+                schema1 = Schema()
                 schema1.read_object(CASE_6)
-                self.assertEqual(expected_ddl, schema1.generate_ddl("test"))
+                self.assertEqual(expected_ddl, schema1.generate_ddl("test", sql_dialect=dialect()))
 
     def test_generate_ddl_datetime(self):
         for dialect in self.sql_dialects:
             with self.subTest(dialect=dialect):
-                if dialect is None:
-                    schema1 = Schema()
+                if dialect is PostgresDialect:
                     expected_ddl = CASE_7_DDL
-                elif dialect == FlinkDialect:
-                    schema1 = Schema(sql_dialect=dialect())
+                elif dialect is FlinkDialect:
                     expected_ddl = CASE_7_DDL_FLINK
                 else:
                     self.fail(f"Subtest failed due to unexpected SQL dialect = {dialect}")
 
+                schema1 = Schema()
                 schema1.read_object(CASE_7)
-                self.assertEqual(expected_ddl, schema1.generate_ddl("test"))
+                self.assertEqual(expected_ddl, schema1.generate_ddl("test", sql_dialect=dialect()))
 
     def test_none_cases(self):
         schema1 = Schema()
