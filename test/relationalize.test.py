@@ -262,6 +262,16 @@ class RelationalizeTest(unittest.TestCase):
                 json.loads(sub_file_lines[3])["_rid_"],
             )
 
+    def test_stringify_arrays(self):
+        with Relationalize("test_case_6_stringify", create_local_buffer(), stringify_arrays=True) as r:
+            r.relationalize([CASE_6])
+            self.assertListEqual(["test_case_6_stringify"], list(r.outputs.keys()))
+            r.outputs["test_case_6_stringify"].seek(0)
+            self.assertDictEqual(
+                json.loads(r.outputs["test_case_6_stringify"].read()),
+                {"1": str([{"2": "foobar", "3": [1, 2]}, {"2": "barfoo", "3": [3, 4]}]), "2": "foobar"}
+            )
+
     def test_flatten_struct(self):
         with Relationalize("test_case_7", create_local_buffer()) as r:
             r.relationalize([CASE_7])
