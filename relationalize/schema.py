@@ -138,10 +138,13 @@ class Schema(Generic[DialectColumnType]):
         columns.sort()
         return columns
 
-    def generate_ddl(self, table: str, schema: str = "public", sql_dialect: SQLDialect[DialectColumnType] = DEFAULT_SQL_DIALECT) -> str:
+    def generate_ddl(self, table: str, schema: str = "public", sql_dialect: SQLDialect[DialectColumnType] = DEFAULT_SQL_DIALECT, schema_qualified: bool = True) -> str:
         """
         Generates a CREATE TABLE statement for this schema, breaking out choice columns into separate columns.
+
         The optional `sql_dialect` argument accepts a SQLDialect instance, which determines the SQL dialect for the DDL.
+        
+        The optional `schema_qualified` argument determines if the CREATE TABLE statement specifies a schema-qualified table name.
         """
         columns_pk: list[str] = [] # The primary keys columns in the table being created. There should be at most 1 per table.
         columns_none: list[str] = [] # The columns with the none data type. These are columns that might not need to be created.
@@ -206,7 +209,7 @@ class Schema(Generic[DialectColumnType]):
                 f"These columns are: {columns_multitype}"
             )
 
-        return sql_dialect.generate_ddl(schema, table, columns)
+        return sql_dialect.generate_ddl(schema, table, columns, schema_qualified)
 
     def drop_null_columns(self) -> int:
         """
