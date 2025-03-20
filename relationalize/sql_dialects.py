@@ -33,10 +33,9 @@ class SQLDialect(ABC, Generic[DialectColumnType]):
         """
         columns_str = _COLUMN_SEPARATOR.join(columns)
         if schema_qualified:
-            ddl = self.base_ddl_sq.format(schema=schema, table_name=table_name, columns=columns_str)
+            return self.base_ddl_sq.format(schema=schema, table_name=table_name, columns=columns_str)
         else:
-            ddl = self.base_ddl.format(table_name=table_name, columns=columns_str)
-        return ddl
+            return self.base_ddl.format(table_name=table_name, columns=columns_str)
 
 # PostgreSQL #
 
