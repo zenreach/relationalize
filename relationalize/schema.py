@@ -188,7 +188,7 @@ class Schema(Generic[DialectColumnType]):
         pk_count = len(columns_pk)
         if pk_count != 1:
             if pk_count == 0:
-                self.logger.warning(f"The '{table}' table is missing a PRIMARY KEY column.\n")
+                self.logger.info(f"The '{table}' table is missing a PRIMARY KEY column.\n")
             else:
                 self.logger.warning(
                     f"Found {pk_count} column(s) with the PRIMARY KEY param in the '{table}' table when there should only be one.\n" \
