@@ -45,6 +45,7 @@ PostgresColumnType = Literal[
     'BIGINT',
     'FLOAT',        # FLOAT === FLOAT8 === DOUBLE PRECISION
     'TEXT',
+    'JSONB',
     'TIMESTAMP',    # TIMESTAMP WITHOUT TIMEZONE
     'TIMESTAMPTZ',  # TIMESTAMP WITH TIMEZONE
 ]
@@ -65,6 +66,8 @@ class PostgresDialect(SQLDialect[PostgresColumnType]):
         "bigint": "BIGINT",
         "float": "FLOAT",
         "str": "TEXT",
+        "str_arr": "JSONB",
+        "str_obj": "JSONB",
         "datetime": "TIMESTAMP",
         "datetime_tz": "TIMESTAMPTZ",
     }
@@ -117,6 +120,8 @@ class FlinkDialect(SQLDialect[FlinkColumnType]):
         "bigint": "BIGINT",
         "float": "FLOAT",
         "str": "STRING",
+        "str_arr": "STRING",
+        "str_obj": "STRING",
         "datetime": "TIMESTAMP",
         "datetime_tz": "TIMESTAMP_LTZ",
     }

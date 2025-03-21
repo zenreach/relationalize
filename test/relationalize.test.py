@@ -265,14 +265,14 @@ class RelationalizeTest(unittest.TestCase):
                 json.loads(sub_file_lines[3])["_rid_"],
             )
 
-    def test_stringify_arrays(self):
-        with Relationalize("test_case_6_stringify_arrays", create_local_buffer(), stringify_arrays=True) as r:
+    def test_ignore_arrays(self):
+        with Relationalize("test_case_6_ignore_arrays", create_local_buffer(), ignore_arrays=True) as r:
             r.relationalize([CASE_6])
-            self.assertListEqual(["test_case_6_stringify_arrays"], list(r.outputs.keys()))
-            r.outputs["test_case_6_stringify_arrays"].seek(0)
+            self.assertListEqual(["test_case_6_ignore_arrays"], list(r.outputs.keys()))
+            r.outputs["test_case_6_ignore_arrays"].seek(0)
             self.assertDictEqual(
-                {"1": str([{"2": "foobar", "3": [1, 2]}, {"2": "barfoo", "3": [3, 4]}]), "2": "foobar"},
-                json.loads(r.outputs["test_case_6_stringify_arrays"].read()),
+                {"1": [{"2": "foobar", "3": [1, 2]}, {"2": "barfoo", "3": [3, 4]}], "2": "foobar"},
+                json.loads(r.outputs["test_case_6_ignore_arrays"].read()),
             )
 
     def test_flatten_struct(self):
@@ -287,14 +287,14 @@ class RelationalizeTest(unittest.TestCase):
                 json.loads(r.outputs["test_case_7"].read()),
             )
 
-    def test_stringify_objects(self):
-        with Relationalize("test_case_7_stringify_objects", create_local_buffer(), stringify_objects=True) as r:
+    def test_ignore_objects(self):
+        with Relationalize("test_case_7_ignore_objects", create_local_buffer(), ignore_objects=True) as r:
             r.relationalize([CASE_7])
-            self.assertListEqual(["test_case_7_stringify_objects"], list(r.outputs.keys()))
-            r.outputs["test_case_7_stringify_objects"].seek(0)
+            self.assertListEqual(["test_case_7_ignore_objects"], list(r.outputs.keys()))
+            r.outputs["test_case_7_ignore_objects"].seek(0)
             self.assertDictEqual(
-                {"1": str({"2": 1, "3": "foobar", "4": {"5": "barfoo"}})},
-                json.loads(r.outputs["test_case_7_stringify_objects"].read()),
+                {"1": {"2": 1, "3": "foobar", "4": {"5": "barfoo"}}},
+                json.loads(r.outputs["test_case_7_ignore_objects"].read()),
             )
 
     def test_list_list_struct(self):

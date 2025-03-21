@@ -7,7 +7,7 @@ This library differs from the original tulip/relationalize as follows:
 - Added PRIMARY KEY handling
 - Modified naming conventions
 - Modified and extended data type parsing
-- Flexibility for relationalizing array and object fields with the `stringify_arrays` and  `stringify_objects` arguments in the relationalize class constructor
+- Flexibility for array and object relationalization with the `ignore_arrays` and  `ignore_objects` arguments in the relationalize class constructor
 
 ## JSON Object Collections
 When working with JSON often there are collections of objects with the same or similar structure. For example, in a NoSQL database there may be a collection describing users with the following two documents/objects:
@@ -61,7 +61,7 @@ There are a number of challenges that must be overcome to move this data into a 
 This package provides a solution to all of these challenges with more portability and flexibility, and less limitations than AWS Glue relationalize.
 
 ## How Relationalize works
-The relationalize function recursively navigates the JSON object and splits out new ojects/collections whenever an array is encountered and provides a connection/relation between the objects. You provide the Relationalize class a function which will determine where to write the transformed content. This could be a local file object, a remote (s3) file object, or an in memory buffer. Additionally any nested objects are flattened. Each object that is output by relationalize is a flat JSON object.
+The relationalize function recursively navigates the JSON object and splits out new objects/collections whenever an array is encountered and provides a connection/relation between the objects. You provide the Relationalize class a function which will determine where to write the transformed content. This could be a local file object, a remote (s3) file object, or an in memory buffer. Additionally any nested objects are flattened. Each object that is output by relationalize is a flat JSON object.
 
 This package also provides a `Schema` class which can generate a schema for a collection of flat JSON objects. This schema can be used to handle type ambigouity and generate SQL DDL.
 
@@ -151,8 +151,8 @@ For example the first document in the users collection would output the followin
 
 ### Options
 The relationalize class constructor takes in a few optional arguments:
-- The `stringify_arrays` boolean determines how arrays are relationalized. By default (`False`), whenever an array is encountered, new tables are created and a connection/relation is provided between the objects. Setting `stringify_arrays = True` converts all arrays (including any nested arrays and objects within) to strings.
-- The `stringify_objects` boolean determines how nested objects are relationalized to be flattened. By default (`False`), nested keys are combined into a single key delimited by underscores. Setting `stringify_objects = True` converts all nested objects as a string.
+- The `ignore_arrays` boolean determines whether or not arrays are relationalized. By default (`False`), whenever an array is encountered, new tables are created and a connection/relation is provided between the objects. No action is taken when `ignore_arrays = True`.
+- The `ignore_objects` boolean determines whether or not nested objects are relationalized. By default (`False`), nested keys are combined into a single key delimited by underscores. No action is taken when `ignore_objects = True`.
 - See the [Logging section](#logging) to read about `log_level`.
 
 For example:
@@ -164,7 +164,7 @@ def on_object_write(schema: str, object: dict):
       schemas[schema] = Schema()
   schemas[schema].read_object(object)
 
-with Relationalize('object_name', on_object_write=on_object_write, stringify_arrays=True, stringify_objects=True) as r:
+with Relationalize('object_name', on_object_write=on_object_write, ignore_arrays=True, ignore_objects=True) as r:
     r.relationalize([{...}, {...}])
 ```
 
@@ -174,9 +174,9 @@ With this, the first document in the users collection will output the following 
 {
     "username": "jsmith123",
     "created_at": "Monday, December 15, 2022 at 20:24",
-    "contact": "{'email_address': 'jsmith123@gmail.com', 'phone_number': 1234567890}",
-    "connections": "['jdoe456','elowry789']",
-    "visits": "[{'seen_at': '2022-12-15T20:24:26.637Z','count': 3}]"
+    "contact": {"email_address": "jsmith123@gmail.com", "phone_number": 1234567890},
+    "connections": ["jdoe456","elowry789"],
+    "visits": [{"seen_at": "2022-12-15T20:24:26.637Z","count": 3}]
 }
 ```
 
