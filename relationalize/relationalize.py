@@ -21,8 +21,8 @@ class Relationalize:
     """
     A class/utility for relationalizing JSON content.
 
-    stringify_arrays = False by default, causing array fields to be separated into individual tables. Set stringify_arrays = True to relationalize arrays by converting them to a string.
-
+    stringify_arrays = False by default, causing array fields to be separated into individual tables. Set stringify_arrays = True to convert arrays to string.
+    stringify_objects = False by default, causing nested object fields to be flattened. Set stringify_objects = True to convert nested objects to string.
     ```
     with Relationalize('abc') as r:
         r.relationalize([{"a": 1}])
@@ -35,12 +35,14 @@ class Relationalize:
         create_output: Callable[[str], TextIO] = DEFAULT_LOCAL_FILE_CALLABLE,
         on_object_write: Callable[[str, dict[str, Any]], None] = no_op,
         stringify_arrays: bool = False,
+        stringify_objects: bool = False,
         log_level=DEFAULT_LOGLEVEL
     ):
         self.name = name
         self.create_output = create_output
         self.on_object_write = on_object_write
         self.stringify_arrays = stringify_arrays
+        self.stringify_objects = stringify_objects
         self.outputs: dict[str, TextIO] = {}
 
         # Configure logger
@@ -143,6 +145,10 @@ class Relationalize:
             return {path: id}
             
         if isinstance(d, dict):
+            if path != "" and self.stringify_objects:
+                d_str = str(d)
+                return {path: d_str}
+
             temp_d: dict[str, object] = {}
             for key in d:
                 temp_table_path = ""

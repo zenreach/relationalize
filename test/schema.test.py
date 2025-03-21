@@ -69,7 +69,7 @@ CREATE TABLE IF NOT EXISTS "public"."test" (
 
 # DDLs expected for dialect = Flink
 CASE_1_DDL_FLINK = """
-CREATE TABLE IF NOT EXISTS public.`test` (
+CREATE TABLE IF NOT EXISTS `public.test` (
     `1` INT
     , `2` STRING
     , `3` BOOLEAN
@@ -90,7 +90,7 @@ CREATE TABLE IF NOT EXISTS `test` (
 """.strip()
 
 CASE_2_DDL_FLINK = """
-CREATE TABLE IF NOT EXISTS public.`test` (
+CREATE TABLE IF NOT EXISTS `public.test` (
     `1_int` INT
     , `1_str` STRING
     , `2_float` FLOAT
@@ -102,14 +102,14 @@ CREATE TABLE IF NOT EXISTS public.`test` (
 """.strip()
 
 CASE_6_DDL_FLINK = """
-CREATE TABLE IF NOT EXISTS public.`test` (
+CREATE TABLE IF NOT EXISTS `public.test` (
     `_id` STRING PRIMARY KEY NOT ENFORCED
     , `not_id` STRING
 );
 """.strip()
 
 CASE_7_DDL_FLINK = """
-CREATE TABLE IF NOT EXISTS public.`test` (
+CREATE TABLE IF NOT EXISTS `public.test` (
     `1` TIMESTAMP_LTZ
     , `2` TIMESTAMP_LTZ
     , `3` TIMESTAMP_LTZ

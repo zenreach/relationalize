@@ -122,7 +122,7 @@ class FlinkDialect(SQLDialect[FlinkColumnType]):
     }
 
     base_ddl_sq: str = """
-CREATE TABLE IF NOT EXISTS {schema}.`{table_name}` (
+CREATE TABLE IF NOT EXISTS `{schema}.{table_name}` (
     {columns}
 );""".strip()
     base_ddl: str = """

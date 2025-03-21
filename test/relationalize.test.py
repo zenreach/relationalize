@@ -14,7 +14,10 @@ CASE_2 = {"1": "foobar", "2": 9.9, "3": True, "4": 9.5}
 
 CASE_3 = {"1": [1, 2], "2": "foobar"}
 
-CASE_4 = {"1": [{"2": "foobar", "3": 1}, {"2": "barfoo", "3": 3}], "2": "foobar"}
+CASE_4 = {
+    "1": [{"2": "foobar", "3": 1}, {"2": "barfoo", "3": 3}],
+    "2": "foobar"
+}
 
 CASE_5 = {"1": [[1], [2, 3]]}
 
@@ -23,7 +26,7 @@ CASE_6 = {
     "2": "foobar",
 }
 
-CASE_7 = {"1": {"2": 1, "3": "foobar"}}
+CASE_7 = {"1": {"2": 1, "3": "foobar", "4": {"5": "barfoo"}}}
 
 CASE_8 = {"1": [[{"2": 3}, {"2": 4}], [{"2": 5}, {"2": 6}]]}
 
@@ -263,13 +266,13 @@ class RelationalizeTest(unittest.TestCase):
             )
 
     def test_stringify_arrays(self):
-        with Relationalize("test_case_6_stringify", create_local_buffer(), stringify_arrays=True) as r:
+        with Relationalize("test_case_6_stringify_arrays", create_local_buffer(), stringify_arrays=True) as r:
             r.relationalize([CASE_6])
-            self.assertListEqual(["test_case_6_stringify"], list(r.outputs.keys()))
-            r.outputs["test_case_6_stringify"].seek(0)
+            self.assertListEqual(["test_case_6_stringify_arrays"], list(r.outputs.keys()))
+            r.outputs["test_case_6_stringify_arrays"].seek(0)
             self.assertDictEqual(
-                json.loads(r.outputs["test_case_6_stringify"].read()),
-                {"1": str([{"2": "foobar", "3": [1, 2]}, {"2": "barfoo", "3": [3, 4]}]), "2": "foobar"}
+                {"1": str([{"2": "foobar", "3": [1, 2]}, {"2": "barfoo", "3": [3, 4]}]), "2": "foobar"},
+                json.loads(r.outputs["test_case_6_stringify_arrays"].read()),
             )
 
     def test_flatten_struct(self):
@@ -280,8 +283,18 @@ class RelationalizeTest(unittest.TestCase):
             )
             r.outputs["test_case_7"].seek(0)
             self.assertDictEqual(
-                {"1_2": 1, "1_3": "foobar"},
+                {"1_2": 1, "1_3": "foobar", "1_4_5": "barfoo"},
                 json.loads(r.outputs["test_case_7"].read()),
+            )
+
+    def test_stringify_objects(self):
+        with Relationalize("test_case_7_stringify_objects", create_local_buffer(), stringify_objects=True) as r:
+            r.relationalize([CASE_7])
+            self.assertListEqual(["test_case_7_stringify_objects"], list(r.outputs.keys()))
+            r.outputs["test_case_7_stringify_objects"].seek(0)
+            self.assertDictEqual(
+                {"1": str({"2": 1, "3": "foobar", "4": {"5": "barfoo"}})},
+                json.loads(r.outputs["test_case_7_stringify_objects"].read()),
             )
 
     def test_list_list_struct(self):
