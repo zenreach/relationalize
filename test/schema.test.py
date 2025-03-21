@@ -21,9 +21,12 @@ CASE_6 = {"_id": "abc123", "not_id": "foobar"}
 
 CASE_7 = {"1": "2017-06-30 22:38:59.051000", "2": "2017-11-12 22:38:59.011Z", "3": "2017-11-12 22:38:59.011-0500", "4": "2017-08-10T17:25:01.324+02:00", "5": "2017-07-09 00:00:00", "6": "2017-07-09T00:00:00", "7": "2017-07-09"}
 
+# Arrays and objects
+CASE_8 = {"1": [1, 2], "2": {"a": 1, "b": "foobar"}}
+
 # Field 1: int/float => int, Field 2: int/float => float
-CASE_8A = {"1": 1, "2": 2}
-CASE_8B = {"1": 1.0, "2": 2.2}
+CASE_9A = {"1": 1, "2": 2}
+CASE_9B = {"1": 1.0, "2": 2.2}
 
 # DDLs expected for dialect = Postgres (default)
 CASE_1_DDL = """
@@ -67,9 +70,16 @@ CREATE TABLE IF NOT EXISTS "public"."test" (
 );
 """.strip()
 
+CASE_8_DDL = """
+CREATE TABLE IF NOT EXISTS "public"."test" (
+    "1" JSONB
+    , "2" JSONB
+);
+""".strip()
+
 # DDLs expected for dialect = Flink
 CASE_1_DDL_FLINK = """
-CREATE TABLE IF NOT EXISTS public.`test` (
+CREATE TABLE IF NOT EXISTS `public.test` (
     `1` INT
     , `2` STRING
     , `3` BOOLEAN
@@ -90,7 +100,7 @@ CREATE TABLE IF NOT EXISTS `test` (
 """.strip()
 
 CASE_2_DDL_FLINK = """
-CREATE TABLE IF NOT EXISTS public.`test` (
+CREATE TABLE IF NOT EXISTS `public.test` (
     `1_int` INT
     , `1_str` STRING
     , `2_float` FLOAT
@@ -102,14 +112,14 @@ CREATE TABLE IF NOT EXISTS public.`test` (
 """.strip()
 
 CASE_6_DDL_FLINK = """
-CREATE TABLE IF NOT EXISTS public.`test` (
+CREATE TABLE IF NOT EXISTS `public.test` (
     `_id` STRING PRIMARY KEY NOT ENFORCED
     , `not_id` STRING
 );
 """.strip()
 
 CASE_7_DDL_FLINK = """
-CREATE TABLE IF NOT EXISTS public.`test` (
+CREATE TABLE IF NOT EXISTS `public.test` (
     `1` TIMESTAMP_LTZ
     , `2` TIMESTAMP_LTZ
     , `3` TIMESTAMP_LTZ
@@ -117,6 +127,13 @@ CREATE TABLE IF NOT EXISTS public.`test` (
     , `5` TIMESTAMP_LTZ
     , `6` TIMESTAMP_LTZ
     , `7` STRING
+);
+""".strip()
+
+CASE_8_DDL_FLINK = """
+CREATE TABLE IF NOT EXISTS `public.test` (
+    `1` STRING
+    , `2` STRING
 );
 """.strip()
 
@@ -161,11 +178,19 @@ class SchemaTest(unittest.TestCase):
             {"1": {"type": "datetime_tz", "is_primary": False}, "2": {"type": "datetime_tz", "is_primary": False}, "3": {"type": "datetime_tz", "is_primary": False}, "4": {"type": "datetime_tz", "is_primary": False}, "5": {"type": "datetime_tz", "is_primary": False}, "6": {"type": "datetime_tz", "is_primary": False}, "7": {"type": "str", "is_primary": False}}, 
             schema.schema
         )
-    
+
+    def test_arrays_objects(self):
+        schema = Schema()
+        schema.read_object(CASE_8)
+        self.assertDictEqual(
+            {"1": {"type": "str_arr", "is_primary": False}, "2": {"type": "str_obj", "is_primary": False}}, 
+            schema.schema
+        )
+
     def test_generalize_choice_int_float(self):
         schema = Schema()
-        schema.read_object(CASE_8A)
-        schema.read_object(CASE_8B)
+        schema.read_object(CASE_9A)
+        schema.read_object(CASE_9B)
         self.assertDictEqual(
             {"1": {"type": "int", "is_primary": False}, "2": {"type": "float", "is_primary": False}}, 
             schema.schema
@@ -297,6 +322,20 @@ class SchemaTest(unittest.TestCase):
 
                 schema1 = Schema()
                 schema1.read_object(CASE_7)
+                self.assertEqual(expected_ddl, schema1.generate_ddl("test", sql_dialect=dialect()))
+
+    def test_generate_ddl_stringified_arr_obj(self):
+        for dialect in self.sql_dialects:
+            with self.subTest(dialect=dialect):
+                if dialect is PostgresDialect:
+                    expected_ddl = CASE_8_DDL
+                elif dialect is FlinkDialect:
+                    expected_ddl = CASE_8_DDL_FLINK
+                else:
+                    self.fail(f"Subtest failed due to unexpected SQL dialect = {dialect}")
+
+                schema1 = Schema()
+                schema1.read_object(CASE_8)
                 self.assertEqual(expected_ddl, schema1.generate_ddl("test", sql_dialect=dialect()))
 
     def test_none_cases(self):

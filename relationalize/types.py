@@ -28,6 +28,8 @@ BaseSupportedColumnType = Literal[
     'bigint',
     'float',
     'str',
+    'str_arr',      # stringified array
+    'str_obj',      # stringified object
     'datetime',     # without timezone
     'datetime_tz',  # with timezone
 ]

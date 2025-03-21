@@ -21,8 +21,8 @@ class Relationalize:
     """
     A class/utility for relationalizing JSON content.
 
-    stringify_arrays = False by default, causing array fields to be separated into individual tables. Set stringify_arrays = True to relationalize arrays by converting them to a string.
-
+    ignore_arrays = False by default, causing array fields to be separated into individual tables. Set ignore_arrays = True to leave arrays unmodified.
+    ignore_objects = False by default, causing nested object fields to be flattened. Set ignore_objects = True to leave nested objects unmodified.
     ```
     with Relationalize('abc') as r:
         r.relationalize([{"a": 1}])
@@ -34,13 +34,15 @@ class Relationalize:
         name: str,
         create_output: Callable[[str], TextIO] = DEFAULT_LOCAL_FILE_CALLABLE,
         on_object_write: Callable[[str, dict[str, Any]], None] = no_op,
-        stringify_arrays: bool = False,
+        ignore_arrays: bool = False,
+        ignore_objects: bool = False,
         log_level=DEFAULT_LOGLEVEL
     ):
         self.name = name
         self.create_output = create_output
         self.on_object_write = on_object_write
-        self.stringify_arrays = stringify_arrays
+        self.ignore_arrays = ignore_arrays
+        self.ignore_objects = ignore_objects
         self.outputs: dict[str, TextIO] = {}
 
         # Configure logger
@@ -128,28 +130,25 @@ class Relationalize:
             if len(d) == 0:
                 return {path: None}
             
-            if self.stringify_arrays:
-                d_str = str(d)
-                return {path: d_str}
-
-            id = Relationalize._generate_rid()
-            for index, row in enumerate(d):
-                key_path = path
-                if table_path:
-                    key_path = table_path
-                self._write_to_output(
-                    key=f"{key_path}", content=self._list_helper(id, index, row, path=path), is_sub=True
-                )
-            return {path: id}
-            
-        if isinstance(d, dict):
-            temp_d: dict[str, object] = {}
-            for key in d:
-                temp_table_path = ""
-                if from_array:
-                    temp_table_path = f"{table_path}{_DELIMITER}{key}"
-                temp_d.update(self._relationalize(d[key], path=f"{path_prefix}{key}", table_path=temp_table_path))
-            return temp_d
+            if not self.ignore_arrays:
+                id = Relationalize._generate_rid()
+                for index, row in enumerate(d):
+                    key_path = path
+                    if table_path:
+                        key_path = table_path
+                    self._write_to_output(
+                        key=f"{key_path}", content=self._list_helper(id, index, row, path=path), is_sub=True
+                    )
+                return {path: id}
+        elif isinstance(d, dict):
+            if path == "" or not self.ignore_objects:
+                temp_d: dict[str, object] = {}
+                for key in d:
+                    temp_table_path = ""
+                    if from_array:
+                        temp_table_path = f"{table_path}{_DELIMITER}{key}"
+                    temp_d.update(self._relationalize(d[key], path=f"{path_prefix}{key}", table_path=temp_table_path))
+                return temp_d
 
         return {path: d}
 
