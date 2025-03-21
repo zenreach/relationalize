@@ -33,15 +33,13 @@ class Schema(Generic[DialectColumnType]):
     def __init__(
         self,
         schema: dict[str, ColumnDict] | None = None,
-        source_dialect: NoSQLDialect = DEFAULT_SOURCE_DIALECT,              # source dialect
-        sql_dialect: SQLDialect[DialectColumnType] = DEFAULT_SQL_DIALECT,   # target dialect
+        source_dialect: NoSQLDialect = DEFAULT_SOURCE_DIALECT,  # source dialect
         log_level=DEFAULT_LOGLEVEL
     ):
         if schema is None:
             schema = dict()
         self.schema = schema
         self.source_dialect = source_dialect
-        self.sql_dialect = sql_dialect
 
         # Configure logger
         logger = logging.getLogger(self.__class__.__name__)
@@ -140,10 +138,13 @@ class Schema(Generic[DialectColumnType]):
         columns.sort()
         return columns
 
-    def generate_ddl(self, table: str, schema: str = "public") -> str:
+    def generate_ddl(self, table: str, schema: str = "public", sql_dialect: SQLDialect[DialectColumnType] = DEFAULT_SQL_DIALECT, schema_qualified: bool = True) -> str:
         """
-        Generates a CREATE TABLE statement for this schema.
-        Breaking out choice columns into separate columns.
+        Generates a CREATE TABLE statement for this schema, breaking out choice columns into separate columns.
+
+        The optional `sql_dialect` argument accepts a SQLDialect instance, which determines the SQL dialect for the DDL.
+        
+        The optional `schema_qualified` argument determines if the CREATE TABLE statement specifies a schema-qualified table name.
         """
         columns_pk: list[str] = [] # The primary keys columns in the table being created. There should be at most 1 per table.
         columns_none: list[str] = [] # The columns with the none data type. These are columns that might not need to be created.
@@ -162,8 +163,8 @@ class Schema(Generic[DialectColumnType]):
             if Schema._CHOICE_SEQUENCE not in value_type:
                 # Column is not a choice column
                 columns.append(
-                    self.sql_dialect.generate_ddl_column(
-                        key, self.sql_dialect.type_column_mapping[value_type], is_primary
+                    sql_dialect.generate_ddl_column(
+                        key, sql_dialect.type_column_mapping[value_type], is_primary
                     )
                 )
                 if value_type == "none":
@@ -175,9 +176,9 @@ class Schema(Generic[DialectColumnType]):
                 if choice_type == "none":
                     continue
                 columns.append(
-                    self.sql_dialect.generate_ddl_column(
+                    sql_dialect.generate_ddl_column(
                         f"{key}_{choice_type}",
-                        self.sql_dialect.type_column_mapping[choice_type],
+                        sql_dialect.type_column_mapping[choice_type],
                         is_primary
                     )
                 )
@@ -208,7 +209,7 @@ class Schema(Generic[DialectColumnType]):
                 f"These columns are: {columns_multitype}"
             )
 
-        return self.sql_dialect.generate_ddl(schema, table, columns)
+        return sql_dialect.generate_ddl(schema, table, columns, schema_qualified)
 
     def drop_null_columns(self) -> int:
         """

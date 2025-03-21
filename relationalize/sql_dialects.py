@@ -14,26 +14,28 @@ class SQLDialect(ABC, Generic[DialectColumnType]):
     Parent class for different sql dialects.
 
     Child classes must implement the `generate_ddl_column` method
-    , and provide `type_column_mapping` and `base_ddl`.
+    , and provide `type_column_mapping`, `base_ddl_sq`, and `base_ddl`.
     """
 
     type_column_mapping: Mapping[SupportedColumnType, DialectColumnType]
-    base_ddl: str
+    base_ddl_sq: str    # DDL with schema-qualified name
+    base_ddl: str       # DDL with just table name
 
     @staticmethod
     @abstractmethod
     def generate_ddl_column(column_name: str, column_type: DialectColumnType, is_primary: bool = False) -> DDLColumn:
         raise NotImplementedError()
 
-    def generate_ddl(self, schema: str, table_name: str, columns: list[str]) -> str:
+    def generate_ddl(self, schema: str, table_name: str, columns: list[str], schema_qualified: bool = True) -> str:
         """
         Generates a complete "Create Table" statement given the
         schema, table_name, and column definitions.
         """
         columns_str = _COLUMN_SEPARATOR.join(columns)
-        return self.base_ddl.format(
-            schema=schema, table_name=table_name, columns=columns_str
-        )
+        if schema_qualified:
+            return self.base_ddl_sq.format(schema=schema, table_name=table_name, columns=columns_str)
+        else:
+            return self.base_ddl.format(table_name=table_name, columns=columns_str)
 
 # PostgreSQL #
 
@@ -67,11 +69,14 @@ class PostgresDialect(SQLDialect[PostgresColumnType]):
         "datetime_tz": "TIMESTAMPTZ",
     }
 
-    base_ddl: str = """
+    base_ddl_sq: str = """
 CREATE TABLE IF NOT EXISTS "{schema}"."{table_name}" (
     {columns}
-);
-    """.strip()
+);""".strip()
+    base_ddl: str = """
+CREATE TABLE IF NOT EXISTS "{table_name}" (
+    {columns}
+);""".strip()
 
     @staticmethod
     def generate_ddl_column(column_name: str, column_type: PostgresColumnType, is_primary: bool = False):
@@ -101,6 +106,8 @@ flink_column_param: dict[(SupportedColumnParam, str), str] = {
 class FlinkDialect(SQLDialect[FlinkColumnType]):
     """
     Inherits from `SQLDialect` and implements the Flink SQL syntax.
+
+    Table and column names should be enclosed by backticks to be treated as a regular identifier. They must not be enclosed by double quotes.
     """
 
     type_column_mapping: Mapping[SupportedColumnType, FlinkColumnType] = {
@@ -114,11 +121,14 @@ class FlinkDialect(SQLDialect[FlinkColumnType]):
         "datetime_tz": "TIMESTAMP_LTZ",
     }
 
-    base_ddl: str = """
-CREATE TABLE IF NOT EXISTS "{schema}"."{table_name}" (
+    base_ddl_sq: str = """
+CREATE TABLE IF NOT EXISTS {schema}.`{table_name}` (
     {columns}
-);
-    """.strip()
+);""".strip()
+    base_ddl: str = """
+CREATE TABLE IF NOT EXISTS `{table_name}` (
+    {columns}
+);""".strip()
 
     @staticmethod
     def generate_ddl_column(column_name: str, column_type: FlinkColumnType, is_primary: bool = False):
@@ -126,7 +136,7 @@ CREATE TABLE IF NOT EXISTS "{schema}"."{table_name}" (
         is_primary = True adds a primary key constraint to the column. Default is False. Since Flink does not own the data, primary keys will always be in NOT ENFORCED mode. 
         '''
         cleaned_column_name = column_name.replace('"', '""')
-        column_str = f'"{cleaned_column_name}" {column_type}'
+        column_str = f'`{cleaned_column_name}` {column_type}'
         if is_primary:
-            column_str = f'"{cleaned_column_name}" {column_type} {flink_column_param["primary_key"]} NOT ENFORCED'
+            column_str = f'`{cleaned_column_name}` {column_type} {flink_column_param["primary_key"]} NOT ENFORCED'
         return DDLColumn(column_str)
