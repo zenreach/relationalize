@@ -388,6 +388,10 @@ class Schema(Generic[DialectColumnType]):
         """
         if isinstance(value, str):
             return parse_type_string(value)
+        if isinstance(value, list):
+            return "str_arr"
+        if isinstance(value, dict):
+            return "str_obj"
         if isinstance(value, bool):
             return "bool"
         if isinstance(value, int):

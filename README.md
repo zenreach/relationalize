@@ -7,7 +7,7 @@ This library differs from the original tulip/relationalize as follows:
 - Added PRIMARY KEY handling
 - Modified naming conventions
 - Modified and extended data type parsing
-- Flexibility for relationalizing array fields with the `stringify_arrays` argument in the relationalize class constructor
+- Flexibility for array and object relationalization with the `ignore_arrays` and  `ignore_objects` arguments in the relationalize class constructor
 
 ## JSON Object Collections
 When working with JSON often there are collections of objects with the same or similar structure. For example, in a NoSQL database there may be a collection describing users with the following two documents/objects:
@@ -58,10 +58,10 @@ There are a number of challenges that must be overcome to move this data into a 
 3. Sparse columns (ex: "contact.phone_number" & "contact.address" field)
 4. Sub-Arrays (ex: "connections" & "visits" field)
 
-This package provides a solutution to all of these challenges with more portability and flexibility, and less limitations than AWS Glue relationalize.
+This package provides a solution to all of these challenges with more portability and flexibility, and less limitations than AWS Glue relationalize.
 
 ## How Relationalize works
-The relationalize function recursively navigates the JSON object and splits out new ojects/collections whenever an array is encountered and provides a connection/relation between the objects. You provide the Relationalize class a function which will determine where to write the transformed content. This could be a local file object, a remote (s3) file object, or an in memory buffer. Additionally any nested objects are flattened. Each object that is output by relationalize is a flat JSON object.
+The relationalize function recursively navigates the JSON object and splits out new objects/collections whenever an array is encountered and provides a connection/relation between the objects. You provide the Relationalize class a function which will determine where to write the transformed content. This could be a local file object, a remote (s3) file object, or an in memory buffer. Additionally any nested objects are flattened. Each object that is output by relationalize is a flat JSON object.
 
 This package also provides a `Schema` class which can generate a schema for a collection of flat JSON objects. This schema can be used to handle type ambigouity and generate SQL DDL.
 
@@ -150,7 +150,10 @@ For example the first document in the users collection would output the followin
 ```
 
 ### Options
-The relationalize class constructor takes in an optional `stringify_arrays` boolean (`False` by default) that determines how arrays are relationalized. As seen in the above example, whenever an array is encountered, new tables are created and a connection/relation is provided between the objects. By setting `stringify_arrays = True`, all top-level arrays (including any nested arrays and objects within) are converted to a string.
+The relationalize class constructor takes in a few optional arguments:
+- The `ignore_arrays` boolean determines whether or not arrays are relationalized. By default (`False`), whenever an array is encountered, new tables are created and a connection/relation is provided between the objects. No action is taken when `ignore_arrays = True`.
+- The `ignore_objects` boolean determines whether or not nested objects are relationalized. By default (`False`), nested keys are combined into a single key delimited by underscores. No action is taken when `ignore_objects = True`.
+- See the [Logging section](#logging) to read about `log_level`.
 
 For example:
 ```python
@@ -161,19 +164,19 @@ def on_object_write(schema: str, object: dict):
       schemas[schema] = Schema()
   schemas[schema].read_object(object)
 
-with Relationalize('object_name', on_object_write=on_object_write, stringify_arrays=True) as r:
+with Relationalize('object_name', on_object_write=on_object_write, ignore_arrays=True, ignore_objects=True) as r:
     r.relationalize([{...}, {...}])
 ```
-With this, the first document in the users collection would output the following after being processed by `relationalize` and `convert_object`:
+
+With this, the first document in the users collection will output the following after being processed by `relationalize` and `convert_object`:
 ```javascript
 // users
 {
     "username": "jsmith123",
     "created_at": "Monday, December 15, 2022 at 20:24",
-    "contact_email_address": "jsmith123@gmail.com",
-    "contact_phone_number": 1234567890,
-    "connections": "['jdoe456','elowry789']",
-    "visits": "[{'seen_at': '2022-12-15T20:24:26.637Z','count': 3}]"
+    "contact": {"email_address": "jsmith123@gmail.com", "phone_number": 1234567890},
+    "connections": ["jdoe456","elowry789"],
+    "visits": [{"seen_at": "2022-12-15T20:24:26.637Z","count": 3}]
 }
 ```
 
@@ -200,6 +203,7 @@ Use the package manager [pip](https://pip.pypa.io/en/stable/) to install relatio
 ```bash
 pip install git+ssh://git@github.com/zenreach/relationalize.git@main#egg=relationalize
 ```
+If you are making changes to this repo and want to see your changes during development in a parent repo, change `@main` to the desired branch. However, do not push this change in.
 
 ## Examples
 Examples are placed in the `examples/` folder.
